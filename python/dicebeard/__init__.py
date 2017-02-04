@@ -1,6 +1,13 @@
 import logging
 import dice
 import re
+import os
+
+from pathlib import Path
+
+from PIL import Image
+from PIL import ImageFont
+from PIL import ImageDraw
 
 import telepot
 import telepot.aio
@@ -21,6 +28,10 @@ dice_faces = {
     5: "\u2684",
     6: "\u2685",
 }
+
+
+
+images = Path(os.path.dirname(__file__))
 
 
 class DiceBeard(BeardChatHandler):
@@ -44,5 +55,20 @@ class DiceBeard(BeardChatHandler):
                 text = "{} = {}".format(sum(roll), roll)
             except TypeError:
                 text = "{}".format(roll)
+        
+        #Testing image manipulation  
+        d20 = images / 'images' / 'd20.png'
+        output = images / 'images' / 'output.png'
+        print(str(d20))
+        img = Image.open(str(d20))
+        draw = ImageDraw.Draw(img)
+        font = ImageFont.truetype('arial.ttf', 72)
+        draw.text((200,200),'72',(200,200,200), font = font)
+        img.save(str(output))
+        
+        print(str(output))
+        await self.sender.sendPhoto(open(str(output),'rb'))
 
         await self.sender.sendMessage("{}".format(text))
+        
+        
