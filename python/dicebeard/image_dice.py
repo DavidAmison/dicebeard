@@ -17,7 +17,7 @@ from PIL import ImageDraw
 class ImageDice:
     '''Class for implementing the python dice and producing images in Telegram'''
     
-    def __init__(self, images_folder, mode = 'str'):
+    def __init__(self, images_folder, mode = 'pic'):
         self.images_path = Path(images_folder)
         self.mode = mode
         
@@ -93,6 +93,7 @@ class ImageDice:
         
         roll_out = []
         total = 0
+        mod = 0
         #Arguments must be a list of strings of format 3d6+/-5 (any number is fine)
         for arg in input_args:
             #remove any + or - then roll the dice
@@ -104,17 +105,13 @@ class ImageDice:
  
             #Extract the modifier and modify :D
             mod_temp = re.findall(r'([+-]\s*\d+)', arg)
-            print(mod_temp)
             str_mod_temp = str(mod_temp).strip('\'[]\'')
-            print(str_mod_temp)
-            str_mod_temp = str_mod_temp.replace(" ","")
-            print(str_mod_temp)
-            total += int(str_mod_temp or '0') #probably not a good idea...
+            mod += int(str_mod_temp or '0') #probably not a good idea...
         
         '''Check what kind of output the user wants and give it'''
         if self.mode == 'pic':
             #create and return the combined image
-            out_img = self.mode_pic(roll_out,total)
+            out_img = self.mode_pic(roll_out,total+mod)
             final_img = self.images_path / ('final.png')
             out_img.save(str(final_img))
             return final_img        
@@ -125,7 +122,7 @@ class ImageDice:
             out_str = ''
             for out in roll_out:
                 out_str = out_str + ('+'.join(map(str,out)))
-            out_str = out_str + ('='+str(total))
+                out_str = out_str+'+['+str(mod)+']='+str(total)
             return out_str   
 
         
