@@ -3,6 +3,8 @@ import dice
 import re
 import os
 
+from . import image_dice as img_dice
+
 from pathlib import Path
 
 from PIL import Image
@@ -14,25 +16,9 @@ from . import img_manip
 import telepot
 import telepot.aio
 from skybeard.beards import BeardChatHandler
+from skybeard.utils import get_args
 
-logger = logging.getLogger(__name__)
-
-
-def get_args(msg_text):
-    return msg_text.split(" ")[1:]
-
-
-
-
-
-dice_faces = {
-    1: "\u2680",
-    2: "\u2681",
-    3: "\u2682",
-    4: "\u2683",
-    5: "\u2684",
-    6: "\u2685",
-}
+#logger = logging.getLogger(__name__)
 
 
 class DiceBeard(BeardChatHandler):
@@ -46,11 +32,23 @@ class DiceBeard(BeardChatHandler):
     
 
     async def roll(self, msg):
+
+        input_args = get_args(msg, return_string = True)        
         
         images = Path(os.path.dirname(__file__))
+        images = images / 'images'
+        
+        my_dice = img_dice.ImageDice(images)
+        out_img = my_dice.roll_dice(input_args)
+        
+        #await self.sender.sendPhoto(open(str(out_img),'rb'))
+        await self.sender.sendMessage(out_img)
+        
+        
+        
+        '''
         final_img = images / 'images' / 'final.png'     
         
-        # Terrible to use an or here but.......I just did.
         print('command recieved')
         roll_text = get_args(msg['text'])
         
@@ -108,17 +106,8 @@ class DiceBeard(BeardChatHandler):
         out_img.save(str(final_img))
         await self.sender.sendPhoto(open(str(final_img),'rb'))        
         
-        await self.sender.sendMessage('The total is ' + str(total))    
-            
-        
-        #input_dice = re.findall(r'(d\d+)',roll_text)
-        #print('dice rolled: ' + str(input_dice))
-        
-        #Roll another die for good measure
-        #roll = dice.roll('1d6')
-        #output_img = img_manip.create_dice_img(self,6,roll)
-        #Post the image to the screen
-        #await self.sender.sendPhoto(open(str(output_img),'rb'))
+        await self.sender.sendMessage('The total is ' + str(total))   
+        '''
 
         
 
