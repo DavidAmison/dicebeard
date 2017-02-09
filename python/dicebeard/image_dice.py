@@ -20,7 +20,45 @@ class ImageDice:
     def __init__(self, images_folder, mode = 'pic'):
         self.images_path = Path(images_folder)
         self.mode = mode
+                    
+    def roll_dice(self,input_string):
+        '''Rolls the dice and produces output as defined in mode'''
+        #Converts the string to a list of arguments
+        input_args = input_string.split(" ")
         
+        roll_out = []
+        total = 0
+        mod = 0
+        #Arguments must be a list of strings of format 3d6+/-5 (any number is fine)
+        for arg in input_args:
+            #remove any + or - then roll the dice
+            arg_roll = re.findall(r'(\d*d\d+)', arg)
+            for rolls in arg_roll:
+                this_roll = dice.roll(rolls)
+                roll_out.append(this_roll)
+                total += sum(this_roll)
+ 
+            #Extract the modifier and modify :D
+            mod_temp = re.findall(r'([+-]\s*\d+)', arg)
+            str_mod_temp = str(mod_temp).strip('\'[]\'')
+            mod += int(str_mod_temp or '0') #probably not a good idea...
+        
+        '''Check what kind of output the user wants and give it'''
+        if self.mode == 'pic':
+            #create and return the combined image
+            try:
+                out_img = self.mode_pic(roll_out,total+mod)
+                final_img = self.images_path / ('final.png')
+                out_img.save(str(final_img))
+                return final_img
+            except FileNotFoundError:
+                return self.mode_txt(roll_out, total, mod)
+        elif self.mode == 'icon':
+            return ''
+        else:
+            #convert the rolls into strings
+            return self.mode_txt(roll_out, total, mod)   
+
     def image_manip(self, sides, value):
         '''Generates an image of a dice with the printed number value. Returns the
         image'''     
@@ -49,7 +87,7 @@ class ImageDice:
         
     
     def mode_pic(self, roll_out, total):
-        '''Now start messing around with pictures'''
+        '''Code for generating the large picture'''
         dice_rolled = 0
         for roll_list in roll_out:
             dice_rolled += len(roll_list)
@@ -84,53 +122,16 @@ class ImageDice:
         w, h = draw.textsize('TOTAL = '+str(total), font=font)
         draw.text(((out_img_size[0]-w)/2,out_img_size[1]-50),'TOTAL = '+str(total),(0,0,0), font = font)
         
-        return out_img
-        
+        return out_img      
     
-    
-    def roll_dice(self,input_string):
-        '''Rolls the dice and produces output as defined in mode'''
-        #Converts the string to a list of arguments
-        input_args = input_string.split(" ")
+    def mode_txt(self, roll_out, total, mod):
+        #convert the rolls into strings
+        out_str = ''
+        for out in roll_out:
+            out_str = out_str + ('+'.join(map(str,out)))
+            out_str = out_str+'+['+str(mod)+']='+str(total)
         
-        roll_out = []
-        total = 0
-        mod = 0
-        #Arguments must be a list of strings of format 3d6+/-5 (any number is fine)
-        for arg in input_args:
-            #remove any + or - then roll the dice
-            arg_roll = re.findall(r'(\d*d\d+)', arg)
-            for rolls in arg_roll:
-                this_roll = dice.roll(rolls)
-                roll_out.append(this_roll)
-                total += sum(this_roll)
- 
-            #Extract the modifier and modify :D
-            mod_temp = re.findall(r'([+-]\s*\d+)', arg)
-            str_mod_temp = str(mod_temp).strip('\'[]\'')
-            mod += int(str_mod_temp or '0') #probably not a good idea...
-        
-        '''Check what kind of output the user wants and give it'''
-        if self.mode == 'pic':
-            #create and return the combined image
-            try:
-                out_img = self.mode_pic(roll_out,total+mod)
-                final_img = self.images_path / ('final.png')
-                out_img.save(str(final_img))
-                return final_img
-            except FileNotFoundError:
-                return 0
-        elif self.mode == 'icon':
-            return ''
-        else:
-            #convert the rolls into strings
-            out_str = ''
-            for out in roll_out:
-                out_str = out_str + ('+'.join(map(str,out)))
-                out_str = out_str+'+['+str(mod)+']='+str(total)
-            return out_str   
-
-        
+        return out_str
         
         
         

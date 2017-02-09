@@ -50,18 +50,17 @@ class DiceBeard(BeardChatHandler):
     async def roll(self, msg):
 
         input_args = get_args(msg, return_string = True)        
-        
-        #images = Path(os.path.dirname(__file__)) / 'images'
-        #images = images / 'images'
         out_dice = self.my_dice.roll_dice(input_args)
-        
-        if out_dice == 0:
-            await self.sender.sendMessage('Please only use d4, d6, d8, d10, d12 or d20')
-            return
         
         #Check which mode the user is in and output the correct format
         if self.my_dice.mode == 'pic':
-            await self.sender.sendPhoto(open(str(out_dice),'rb'))
+            #Check a file path has been output, output picture if so and text otherwise
+            if isinstance(out_dice, Path):
+                await self.sender.sendPhoto(open(str(out_dice),'rb'))
+            elif isinstance(out_dice, str):
+                await self.sender.sendMessage(out_dice)
+            else:
+                await self.sender.sendMessage('Input was invalid')
         elif self.my_dice.mode == 'icon':
             await self.sender.sendMessage('Not yet formatted')
         else:
