@@ -30,7 +30,7 @@ class ImageDice:
         font_sz = 20
         if int(sides) == 6:
             font_sz = 50
-                   
+
         #Open correct image and add the number 
         img = Image.open(str(dice_img))        
         draw = ImageDraw.Draw(img)
@@ -45,6 +45,8 @@ class ImageDice:
         
         #return the image
         return img
+
+        
     
     def mode_pic(self, roll_out, total):
         '''Now start messing around with pictures'''
@@ -111,10 +113,13 @@ class ImageDice:
         '''Check what kind of output the user wants and give it'''
         if self.mode == 'pic':
             #create and return the combined image
-            out_img = self.mode_pic(roll_out,total+mod)
-            final_img = self.images_path / ('final.png')
-            out_img.save(str(final_img))
-            return final_img        
+            try:
+                out_img = self.mode_pic(roll_out,total+mod)
+                final_img = self.images_path / ('final.png')
+                out_img.save(str(final_img))
+                return final_img
+            except FileNotFoundError:
+                return 0
         elif self.mode == 'icon':
             return ''
         else:

@@ -55,6 +55,10 @@ class DiceBeard(BeardChatHandler):
         #images = images / 'images'
         out_dice = self.my_dice.roll_dice(input_args)
         
+        if out_dice == 0:
+            await self.sender.sendMessage('Please only use d4, d6, d8, d10, d12 or d20')
+            return
+        
         #Check which mode the user is in and output the correct format
         if self.my_dice.mode == 'pic':
             await self.sender.sendPhoto(open(str(out_dice),'rb'))
