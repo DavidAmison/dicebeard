@@ -53,12 +53,12 @@ class Dice:
                 out_img.save(str(final_img))
                 return final_img
             except FileNotFoundError:
-                return self.mode_txt(roll_out, total, mod)
+                return self.mode_txt(roll_out, total+mod, mod)
         elif self.mode == 'icon':
             return ''
         else:
             #convert the rolls into strings
-            return self.mode_txt(roll_out, total, mod)   
+            return self.mode_txt(roll_out, total+mod, mod)   
 
     def dice_image_manip(self, sides, value):
         '''Generates an image of a dice with the printed number value. Returns the
@@ -131,8 +131,9 @@ class Dice:
         #convert the rolls into strings
         out_str = ''
         for out in roll_out:
-            out_str = out_str + ('+'.join(map(str,out)))
-            out_str = out_str+'+['+str(mod)+']='+str(total)
+            out_str = out_str + ('+'.join(map(str,out))) + '+'
+                                    
+        out_str = out_str+'['+str(mod)+']='+str(total)
         
         return out_str
     
