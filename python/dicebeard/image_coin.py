@@ -1,9 +1,6 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Feb  8 15:26:17 2017
-
-@author: David
-"""
+'''
+By David Amison
+'''
 
 import random
 
@@ -120,20 +117,4 @@ class Coin:
                 out_str = out_str + 'T '
         
         out_str = out_str+'= [H:'+str(heads)+', T:'+str(tails)+']'
-        return out_str
-
-                
-
-            
-        
-        
-    
-    
-        
-        
-        
-        
-        
-        
-    
-    
+        return out_str   
