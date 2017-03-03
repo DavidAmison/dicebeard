@@ -1,3 +1,6 @@
+"""
+@author: David Amison
+"""
 import os
 
 from . import image_dice as dice
