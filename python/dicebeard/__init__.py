@@ -30,9 +30,7 @@ class DiceBeard(BeardChatHandler):
     Currently, supported dice for producing images are d4, d6, d8, d10, d12 and d20.
     To flip coins simply type /flip followed by the number of coins you would like to flip (e.g /flip 10 will filp 10 coins)"""
           
-    images_path = Path(os.path.dirname(__file__)) / 'images'
-    my_dice = dice.Dice(images_path)
-    my_coin = coin.Coin(images_path)
+    
  
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -43,28 +41,28 @@ class DiceBeard(BeardChatHandler):
                  InlineKeyboardButton(
                      text='Text', callback_data=self.serialize('Text'))],
             ])
+        #Directory where image files are stored
+        self.images_path = Path(os.path.dirname(__file__)) / 'images'
+        #Objects controllling rolling dice and tossing coins
+        self.my_dice = dice.Dice(self.images_path)
+        self.my_coin = coin.Coin(self.images_path)
     
         
     async def roll(self, msg):
-
-        input_args = get_args(msg, return_string = True)        
+        #Extract the input arguments
+        input_args = get_args(msg, return_string = True) 
+        #Roll the dice
         out_dice = self.my_dice.roll_dice(input_args)
         
-        #Check which mode the user is in and output the correct format
-        if self.my_dice.mode == 'pic':
-            #Check a file path has been output, output picture if so and text otherwise
-            if isinstance(out_dice, Path):
-                await self.sender.sendPhoto(open(str(out_dice),'rb'))
-                
-            elif isinstance(out_dice, str):
-                await self.sender.sendMessage(out_dice)
-            else:
-                await self.sender.sendMessage('Input was invalid')
-        else:
+        #Try and send picture, if fails then try and send as text
+        try:
+            await self.sender.sendPhoto(open(str(out_dice),'rb'))
+        except FileNotFoundError:
             await self.sender.sendMessage(out_dice)
+        
             
     async def flip_coin(self, msg):
-
+        #Extract the input arguments then filp the coin
         input_args = get_args(msg, return_string = True)  
         if input_args == '':
             input_args = '1'
@@ -72,15 +70,10 @@ class DiceBeard(BeardChatHandler):
         out_coin = self.my_coin.flip_coin(input_args)
 
         #Check which mode the user is in and output the correct format
-        if self.my_coin.mode == 'pic':
-            #Check a file path has been output, output picture if so and text otherwise
-            if isinstance(out_coin, Path):
-                await self.sender.sendPhoto(open(str(out_coin),'rb'))
-            elif isinstance(out_coin, str):
-                await self.sender.sendMessage(out_coin)
-            else:
-                await self.sender.sendMessage('Input was invalid')
-        else:
+        #Try and send picture, if fails then try and send as text
+        try:
+            await self.sender.sendPhoto(open(str(out_coin),'rb'))
+        except FileNotFoundError:
             await self.sender.sendMessage(out_coin)
 
 
