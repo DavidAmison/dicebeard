@@ -10,10 +10,12 @@ from pathlib import Path
 
 import telepot
 import telepot.aio
-from skybeard.utils import get_args
 from telepot import glance
 from telepot.namedtuple import InlineKeyboardMarkup, InlineKeyboardButton
+
+from skybeard.utils import get_args
 from skybeard.beards import BeardChatHandler, ThatsNotMineException
+from skybeard.decorators import onerror
 
 
 class DiceBeard(BeardChatHandler):
@@ -30,11 +32,7 @@ class DiceBeard(BeardChatHandler):
 
     __userhelp__ = """Can roll dice or flip coins.
 
-To roll dice use the /roll command followed by any number of arguments of the
-form 3d6+5 (can be + or -) seperated by spaces. Currently, supported dice for
-producing images are d4, d6, d8, d10, d12 and d20. To flip coins simply type
-/flip followed by the number of coins you would like to flip (e.g /flip 10 will
-filp 10 coins)
+To roll dice use the /roll command followed by any number of arguments of the form 3d6+5 (can be + or -) seperated by spaces. Currently, supported dice for producing images are d4, d6, d8, d10, d12 and d20. To flip coins simply type /flip followed by the number of coins you would like to flip (e.g /flip 10 will filp 10 coins)
 
     """.strip()
 
@@ -55,6 +53,7 @@ filp 10 coins)
         self.my_dice = dice.Dice(self.images_path)
         self.my_coin = coin.Coin(self.images_path)
 
+    @onerror
     async def roll(self, msg):
         # Extract the input arguments
         input_args = get_args(msg, return_string=True)
@@ -68,6 +67,7 @@ filp 10 coins)
         except FileNotFoundError:
             await self.sender.sendMessage(out_dice)
 
+    @onerror
     async def flip_coin(self, msg):
         # Extract the input arguments then filp the coin
         input_args = get_args(msg, return_string=True)
@@ -83,6 +83,7 @@ filp 10 coins)
         except AttributeError:
             await self.sender.sendMessage(out_coin)
 
+    @onerror
     async def mode(self, msg):
         await self.sender.sendMessage('Please choose:',
                                       reply_markup=self.keyboard)
