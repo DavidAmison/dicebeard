@@ -46,9 +46,10 @@ class DiceBeard(BeardChatHandler):
             ])
         #Directory where image files are stored
         self.images_path = Path(os.path.dirname(__file__)) / 'images'
+        self.font_path = self.images_path/'FiraSans-Regular.otf'
         #Objects controllling rolling dice and tossing coins
-        self.my_dice = dice.Dice(self.images_path)
-        self.my_coin = coin.Coin(self.images_path)
+        self.my_dice = dice.Dice(self.images_path, self.font_path)
+        self.my_coin = coin.Coin(self.images_path, self.font_path)
     
         
     async def roll(self, msg):

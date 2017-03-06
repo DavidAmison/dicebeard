@@ -14,8 +14,9 @@ from PIL import ImageDraw
 class Coin:
     '''Class for implementing the python dice and producing images in Telegram'''
     
-    def __init__(self, images_folder, mode = 'pic'):
+    def __init__(self, images_folder, font_path = None, mode = 'pic'):
         self.images_path = Path(images_folder)
+        self.font_path = Path(font_path)
         self.mode = mode
                     
     def flip_coin(self,input_string):
@@ -100,7 +101,11 @@ class Coin:
             msg = 'Tails'
         
         draw = ImageDraw.Draw(out_img)
-        font = ImageFont.truetype('arial.ttf', 36)
+        try:
+            font = ImageFont.truetype(str(self.font_path),36)
+        except AttributeError:
+            font = ImageFont.load_default()
+        
         w, h = draw.textsize(msg, font=font)
         draw.text(((out_img_size[0]-w)/2,out_img_size[1]-50),msg,(0,0,0), font = font)
         
