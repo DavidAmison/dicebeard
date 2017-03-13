@@ -48,12 +48,13 @@ To roll dice use the /roll command followed by any number of arguments of the fo
 
         # Directory where image files are stored
         self.images_path = Path(os.path.dirname(__file__)) / 'images'
-
-        # Objects controlling rolling dice and tossing coins
-        self.my_dice = dice.Dice(self.images_path)
-        self.my_coin = coin.Coin(self.images_path)
+        self.font_path = self.images_path/'FiraSans-Regular.otf'
+        #Objects controllling rolling dice and tossing coins
+        self.my_dice = dice.Dice(self.images_path, self.font_path)
+        self.my_coin = coin.Coin(self.images_path, self.font_path)
 
     @onerror
+
     async def roll(self, msg):
         # Extract the input arguments
         input_args = get_args(msg, return_string=True)

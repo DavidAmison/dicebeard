@@ -13,10 +13,12 @@ from PIL import ImageDraw
 
 
 class Dice:
-    '''Class for implementing the python dice and producing images'''
 
-    def __init__(self, images_folder, mode='pic'):
+    '''Class for implementing the python dice and producing images in Telegram'''
+    
+    def __init__(self, images_folder, font_path = None, mode = 'pic'):
         self.images_path = Path(images_folder)
+        self.font_path = Path(font_path)
         self.mode = mode
 
     def roll_dice(self, input_string):
@@ -71,8 +73,12 @@ class Dice:
         # Open correct image and add the number
         img = Image.open(str(dice_img))
         draw = ImageDraw.Draw(img)
-        font = ImageFont.truetype('arial.ttf', font_sz)
-        # set x and y co-ordinates based on number
+
+        try:
+            font = ImageFont.truetype(str(self.font_path),font_sz)
+        except AttributeError:
+            font = ImageFont.load_default()
+        #set x and y co-ordinates based on number
         W, H = img.size
         w, h = draw.textsize(str(value), font=font)
         x = (W-w)/2
@@ -120,7 +126,11 @@ class Dice:
 
         # Add text giving the total roll to the bottom
         draw = ImageDraw.Draw(out_img)
-        font = ImageFont.truetype('arial.ttf', 38)
+        try:
+            font = ImageFont.truetype(str(self.font_path),36)
+        except AttributeError:
+            font = ImageFont.load_default()
+            
         w, h = draw.textsize('TOTAL = '+str(total), font=font)
         draw.text(
             ((out_img_size[0]-w)/2, out_img_size[1]-50),
