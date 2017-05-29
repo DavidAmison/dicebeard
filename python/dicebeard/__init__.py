@@ -15,7 +15,7 @@ from telepot.namedtuple import InlineKeyboardMarkup, InlineKeyboardButton
 
 from skybeard.utils import get_args
 from skybeard.beards import BeardChatHandler, ThatsNotMineException
-from skybeard.decorators import onerror
+from skybeard.decorators import onerror, getargsorask
 
 
 class DiceBeard(BeardChatHandler):
@@ -53,12 +53,9 @@ To roll dice use the /roll command followed by any number of arguments of the fo
         self.my_dice = dice.Dice(self.images_path, self.font_path)
         self.my_coin = coin.Coin(self.images_path, self.font_path)
 
-    @onerror
-
-    async def roll(self, msg):
-        # Extract the input arguments
-        input_args = get_args(msg, return_string=True)
-
+    @onerror()
+    @getargsorask([('input_args', 'What dice do you want to roll?')])
+    async def roll(self, msg, input_args):
         # Roll the dice
         out_dice = self.my_dice.roll_dice(input_args)
 
@@ -68,12 +65,9 @@ To roll dice use the /roll command followed by any number of arguments of the fo
         except FileNotFoundError:
             await self.sender.sendMessage(out_dice)
 
-    @onerror
-    async def flip_coin(self, msg):
-        # Extract the input arguments then filp the coin
-        input_args = get_args(msg, return_string=True)
-        if input_args == '':
-            input_args = '1'
+    @onerror()
+    @getargsorask([('input_args', 'How many coins do you want to flip?')])
+    async def flip_coin(self, msg, input_args):
 
         out_coin = self.my_coin.flip_coin(input_args)
 
@@ -84,7 +78,7 @@ To roll dice use the /roll command followed by any number of arguments of the fo
         except AttributeError:
             await self.sender.sendMessage(out_coin)
 
-    @onerror
+    @onerror()
     async def mode(self, msg):
         await self.sender.sendMessage('Please choose:',
                                       reply_markup=self.keyboard)
