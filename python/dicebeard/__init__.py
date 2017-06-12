@@ -21,6 +21,17 @@ from skybeard.beards import BeardChatHandler, ThatsNotMineException
 from skybeard.decorators import onerror, getargsorask, getargs
 
 
+class AnswerTimer:
+    """Times the code within the `with` block."""
+    def __enter__(self):
+        self.start_time = default_timer()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.end_time = default_timer()
+        self.total_time = self.end_time - self.start_time
+
+
 class DiceBeard(BeardChatHandler):
 
     __commands__ = [
@@ -64,9 +75,7 @@ To roll dice use the /roll command followed by any number of arguments of the fo
     @getargs()
     async def train(self, msg, no_of_dice=3):
         '''Game for training adding up dice.'''
-        # Outputs a BytesIO stream and the total value of the dice
-        # input_args = get_args(msg)
-        # i = 0
+
         try:
             no_of_dice = int(no_of_dice)
         except ValueError:
@@ -77,7 +86,7 @@ To roll dice use the /roll command followed by any number of arguments of the fo
             await self.sender.sendMessage("Sorry, that's too many dice! Try a number under 10 ;).")
             return
 
-        # TODO removed image support while figuring out bug with image processing.
+        # TODO removed image use while we fix a bug with image processing.
         # i = no_of_dice
         # out, total = self.my_dice.train(i)
         # await self.sender.sendPhoto(out)
@@ -86,25 +95,26 @@ To roll dice use the /roll command followed by any number of arguments of the fo
         total = sum(dice)
         await self.sender.sendMessage(str(dice))
 
-        # Gets the time as accurately as possible (see timeit.default_timer())
-        start = default_timer()
-        msg = await self.listener.wait()
-        end = default_timer()
-        elapsed = round(end - start, 2)
+        with AnswerTimer() as timer:
+            msg = await self.listener.wait()
 
+        # Check if the answer is a number
         try:
             answer = int(msg['text'])
         except ValueError:
             await self.sender.sendMessage("That answer was not a number.")
             return
         except KeyError:
-            await self.sender.sendMessage("I appear to have recieved something that is not text...")
+            await self.sender.sendMessage("Please answer with text based numbers.")
+            return
 
-        # if answer:
+        # Report back to the user about their answer
         if answer == total:
-            await self.sender.sendMessage('Correct: '+str(elapsed)+'s')
+            await self.sender.sendMessage(
+                '✅ Correct: {:.3}s'.format(timer.total_time))
         else:
-            await self.sender.sendMessage('Wrong: '+str(elapsed)+'s')
+            await self.sender.sendMessage(
+                '❌ Wrong: {:.3}s'.format(timer.total_time))
 
     @onerror()
     @getargsorask([('input_args', 'What dice do you want to roll?')])
