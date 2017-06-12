@@ -35,7 +35,6 @@ class Dice:
         total = 0
         for n in range(0,i):
             #convert dice number into the relevant file
-            print(n)
             die = random.randint(1,6)
             rotation = random.randint(0,360)
             total += die
@@ -61,7 +60,6 @@ class Dice:
                 for point in points:
                     if (abs(x_y[0]-point[0]) <= excl_box) and (abs(x_y[1]-point[1]) <= excl_box):
                         accepted = False
-            print(x_y)
             points.append(x_y)
         return points
 
