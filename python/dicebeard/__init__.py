@@ -6,6 +6,7 @@ from . import image_coin as coin
 
 import re
 from timeit import default_timer
+from copy import deepcopy
 
 from pathlib import Path
 
@@ -34,8 +35,8 @@ class DiceBeard(BeardChatHandler):
     __commands__ = [
         ('roll', 'roll',
          'Rolls dice. Parses args and rolls.'),
-        ('train', 'train',
-         'does some training'),
+        ('train', 'train', 'does some training'),
+        ('trainmany', 'train_many', 'Trains dice roll <code>n</code> times.'),
         ('flip', 'flip_coin',
          'Flips a number of coins and returns the result'),
         ('mode', 'mode',
@@ -67,6 +68,18 @@ To roll dice use the /roll command followed by any number of arguments of the fo
         self.my_coin = coin.Coin(self.images_path, self.font_path)
 
     _timeout = 90
+
+    @onerror()
+    @getargs()
+    async def train_many(self, msg, no_of_times, no_of_dice=3):
+        try:
+            for i in range(int(no_of_times)):
+                # Change message to be something more pallatable
+                msg_edited = deepcopy(msg)
+                msg_edited['text'] = "/train {}".format(no_of_dice)
+                await self.train(msg_edited)
+        except ValueError:
+            await self.sender.sendMessage("I require an integer number of turns.")
 
     @onerror()
     @getargs()
