@@ -6,6 +6,9 @@ import os
 from . import image_dice as dice
 from . import image_coin as coin
 
+import re
+from timeit import default_timer as timer
+
 from pathlib import Path
 
 import telepot
@@ -23,6 +26,8 @@ class DiceBeard(BeardChatHandler):
     __commands__ = [
         ('roll', 'roll',
          'Rolls dice. Parses args and rolls.'),
+        ('train','train',
+         'does some training'),
         ('flip', 'flip_coin',
          'Flips a number of coins and returns the result'),
         ('mode', 'mode',
@@ -53,17 +58,49 @@ To roll dice use the /roll command followed by any number of arguments of the fo
         self.my_dice = dice.Dice(self.images_path, self.font_path)
         self.my_coin = coin.Coin(self.images_path, self.font_path)
 
+
+    _timeout = 90
+
+    @onerror()
+    async def train(self,msg):
+        '''Game for training adding up dice.'''
+        #Outputs a BytesIO stream and the total value of the dice
+        input_args = get_args(msg)
+        i = 0
+        
+        try:
+            i = int(input_args[0])
+            i = 10 if i > 10 else i
+        except Exception:
+            i = 3
+        out, total = self.my_dice.train(i) 
+        await self.sender.sendPhoto(out)
+        start = timer()
+        msg = await self.listener.wait()
+        end = timer()
+        elapsed = round(end - start,2)
+        answer = re.match(r'^\d+', msg['text'])
+        if answer:
+            if int(answer.group(0)) == total:
+                await self.sender.sendMessage('Correct: '+str(elapsed)+'s')
+            else:
+                await self.sender.sendMessage('Wrong')
+        else:
+            await self.sender.sendMessage('Wrong')
+        
+        
+        
     @onerror()
     @getargsorask([('input_args', 'What dice do you want to roll?')])
     async def roll(self, msg, input_args):
         # Roll the dice
         out_dice = self.my_dice.roll_dice(input_args)
-
         # Try and send picture, if fails then try and send as text
         try:
             await self.sender.sendPhoto(open(str(out_dice), 'rb'))
         except FileNotFoundError:
             await self.sender.sendMessage(out_dice)
+            
 
     @onerror()
     @getargsorask([('input_args', 'How many coins do you want to flip?')])
