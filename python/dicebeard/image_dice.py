@@ -19,7 +19,7 @@ class Dice:
 
     '''Class for implementing the python dice and producing images in Telegram'''
     
-    def __init__(self, images_folder, font_path = None, mode = 'pic'):
+    def __init__(self, images_folder, font_path=None, mode='pic'):
         self.images_path = Path(images_folder)
         self.font_path = Path(font_path)
         self.mode = mode
