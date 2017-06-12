@@ -8,7 +8,7 @@ from . import image_dice as dice
 from . import image_coin as coin
 
 import re
-from timeit import default_timer as timer
+from timeit import default_timer
 
 from pathlib import Path
 
@@ -85,18 +85,26 @@ To roll dice use the /roll command followed by any number of arguments of the fo
         dice = [random.randint(1,6) for x in range(no_of_dice)]
         total = sum(dice)
         await self.sender.sendMessage(str(dice))
-        start = timer()
+
+        # Gets the time as accurately as possible (see timeit.default_timer())
+        start = default_timer()
         msg = await self.listener.wait()
-        end = timer()
+        end = default_timer()
         elapsed = round(end - start, 2)
-        answer = re.match(r'^\d+', msg['text'])
-        if answer:
-            if int(answer.group(0)) == total:
-                await self.sender.sendMessage('Correct: '+str(elapsed)+'s')
-            else:
-                await self.sender.sendMessage('Wrong')
+
+        try:
+            answer = int(msg['text'])
+        except ValueError:
+            await self.sender.sendMessage("That answer was not a number.")
+            return
+        except KeyError:
+            await self.sender.sendMessage("I appear to have recieved something that is not text...")
+
+        # if answer:
+        if answer == total:
+            await self.sender.sendMessage('Correct: '+str(elapsed)+'s')
         else:
-            await self.sender.sendMessage('Wrong')
+            await self.sender.sendMessage('Wrong: '+str(elapsed)+'s')
 
     @onerror()
     @getargsorask([('input_args', 'What dice do you want to roll?')])
