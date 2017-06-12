@@ -43,7 +43,8 @@ class Dice:
             die_img = die_img.convert('RGBA').rotate(rotation,resample=Image.BICUBIC,expand=True)
             width, height = die_img.size
             #add the image to the output image
-            out_img.paste(die_img,[int(points[n][0]-(width/2)),int(points[n][1]-(height/2))],die_img)
+            # TODO fix this bug 
+            # out_img.paste(die_img,[int(points[n][0]-(width/2)),int(points[n][1]-(height/2))],die_img)
         bytes_out = io.BytesIO()
         out_img.save(bytes_out, format='PNG')
         bytes_out = bytes_out.getvalue()

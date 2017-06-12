@@ -16,9 +16,8 @@ import telepot.aio
 from telepot import glance
 from telepot.namedtuple import InlineKeyboardMarkup, InlineKeyboardButton
 
-from skybeard.utils import get_args
 from skybeard.beards import BeardChatHandler, ThatsNotMineException
-from skybeard.decorators import onerror, getargsorask
+from skybeard.decorators import onerror, getargsorask, getargs
 
 
 class DiceBeard(BeardChatHandler):
@@ -61,17 +60,23 @@ To roll dice use the /roll command followed by any number of arguments of the fo
     _timeout = 90
 
     @onerror()
-    async def train(self, msg):
+    @getargs()
+    async def train(self, msg, no_of_dice=3):
         '''Game for training adding up dice.'''
         # Outputs a BytesIO stream and the total value of the dice
-        input_args = get_args(msg)
-        i = 0
-
+        # input_args = get_args(msg)
+        # i = 0
         try:
-            i = int(input_args[0])
-            i = 10 if i > 10 else i
-        except Exception:
-            i = 3
+            no_of_dice = int(no_of_dice)
+        except ValueError:
+            await self.sender.sendMessage("Sorry, '{}' is not an number.")
+            return
+
+        if no_of_dice > 10:
+            await self.sender.sendMessage("Sorry, that's too many dice! Try a number under 10 ;).")
+            return
+
+        i = no_of_dice
         out, total = self.my_dice.train(i)
         await self.sender.sendPhoto(out)
         start = timer()
