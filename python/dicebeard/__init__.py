@@ -2,6 +2,7 @@
 @author: David Amison
 """
 import os
+import random
 
 from . import image_dice as dice
 from . import image_coin as coin
@@ -76,9 +77,14 @@ To roll dice use the /roll command followed by any number of arguments of the fo
             await self.sender.sendMessage("Sorry, that's too many dice! Try a number under 10 ;).")
             return
 
-        i = no_of_dice
-        out, total = self.my_dice.train(i)
-        await self.sender.sendPhoto(out)
+        # TODO removed image support while figuring out bug with image processing.
+        # i = no_of_dice
+        # out, total = self.my_dice.train(i)
+        # await self.sender.sendPhoto(out)
+        # TODO replace this dice hacking with something better like pydice
+        dice = [random.randint(1,6) for x in range(no_of_dice)]
+        total = sum(dice)
+        await self.sender.sendMessage(str(dice))
         start = timer()
         msg = await self.listener.wait()
         end = timer()
