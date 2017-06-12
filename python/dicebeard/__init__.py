@@ -1,6 +1,3 @@
-"""
-@author: David Amison
-"""
 import os
 import random
 
