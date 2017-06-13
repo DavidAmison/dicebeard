@@ -73,20 +73,24 @@ To roll dice use the /roll command followed by any number of arguments of the fo
 
     @getargs()
     async def train_many(self, msg, no_of_times, no_of_dice=3):
+        total_score = 0
         try:
             for i in range(int(no_of_times)):
                 # Change message to be something more pallatable
                 msg_edited = deepcopy(msg)
                 msg_edited['text'] = "/train {}".format(no_of_dice)
-                await self.train(msg_edited)
+                #print(await self.train(msg_edited))
+                total_score += await self.train(msg_edited)
+            await self.sender.sendMessage(
+                    "Your total score is {:.3} for {} turns".format(total_score,no_of_times))
         except ValueError:
             await self.sender.sendMessage("I require an integer number of turns.")
+            
 
     @onerror()
     @getargs()
     async def train(self, msg, no_of_dice=3):
         '''Game for training adding up dice.'''
-
         try:
             no_of_dice = int(no_of_dice)
         except ValueError:
@@ -98,13 +102,13 @@ To roll dice use the /roll command followed by any number of arguments of the fo
             return
 
         # TODO removed image use while we fix a bug with image processing.
-        # i = no_of_dice
-        # out, total = self.my_dice.train(i)
-        # await self.sender.sendPhoto(out)
+        i = no_of_dice
+        out, total = self.my_dice.train(i)
+        await self.sender.sendPhoto(out)
         # TODO replace this dice hacking with something better like pydice
-        dice = [random.randint(1,6) for x in range(no_of_dice)]
-        total = sum(dice)
-        await self.sender.sendMessage(str(dice))
+        #dice = [random.randint(1,6) for x in range(no_of_dice)]
+        #total = sum(dice)
+        #await self.sender.sendMessage(str(dice))
         
         my_listener = self.bot.create_listener() 
         my_listener.capture([{'from':{'id':msg['from']['id']}}])
@@ -124,10 +128,14 @@ To roll dice use the /roll command followed by any number of arguments of the fo
         # Report back to the user about their answer
         if answer == total:
             await self.sender.sendMessage(
-                '✅ Correct: {:.3}s'.format(timer.total_time))
+                'Correct: {:.3}s'.format(timer.total_time))
+            return timer.total_time
+            
         else:
             await self.sender.sendMessage(
-                '❌ Wrong: {:.3}s'.format(timer.total_time))
+                'Wrong: {:.3}s'.format(timer.total_time))
+            return 10     
+        
 
     @onerror()
     @getargsorask([('input_args', 'What dice do you want to roll?')])
