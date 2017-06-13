@@ -63,11 +63,12 @@ To roll dice use the /roll command followed by any number of arguments of the fo
 
     @onerror()
     async def train(self,msg):
-        '''Game for training adding up dice.'''
         #Outputs a BytesIO stream and the total value of the dice
-        input_args = get_args(msg)
-        i = 0
+        my_listener = self.bot.create_listener() 
+        my_listener.capture([{'from':{'id':msg['from']['id']}}])
         
+        input_args = get_args(msg)
+        i = 0        
         try:
             i = int(input_args[0])
             i = 10 if i > 10 else i
@@ -76,7 +77,7 @@ To roll dice use the /roll command followed by any number of arguments of the fo
         out, total = self.my_dice.train(i) 
         await self.sender.sendPhoto(out)
         start = timer()
-        msg = await self.listener.wait()
+        msg = await my_listener.wait()
         end = timer()
         elapsed = round(end - start,2)
         answer = re.match(r'^\d+', msg['text'])
