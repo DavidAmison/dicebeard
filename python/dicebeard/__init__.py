@@ -28,6 +28,14 @@ class AnswerTimer:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.end_time = default_timer()
         self.total_time = self.end_time - self.start_time
+        
+class TrainResult:
+    """Stores the result of a training round"""
+    def __init__(self,num_of_dice, roll, guess, time):
+        self.num_of_dice = num_of_dice
+        self.roll = roll
+        self.guess = guess
+        self.time = time
 
 
 class DiceBeard(BeardChatHandler):
@@ -80,7 +88,11 @@ To roll dice use the /roll command followed by any number of arguments of the fo
                 msg_edited = deepcopy(msg)
                 msg_edited['text'] = "/train {}".format(no_of_dice)
                 #print(await self.train(msg_edited))
-                total_score += await self.train(msg_edited)
+                result = await self.train(msg_edited)
+                if result.roll == result.guess:
+                    total_score += result.time
+                else:
+                    total_score += 10
             await self.sender.sendMessage(
                     "Your total score is {:.3} for {} turns".format(total_score,no_of_times))
         except ValueError:
@@ -102,8 +114,7 @@ To roll dice use the /roll command followed by any number of arguments of the fo
             return
 
         # TODO removed image use while we fix a bug with image processing.
-        i = no_of_dice
-        out, total = self.my_dice.train(i)
+        out, total = self.my_dice.train(no_of_dice)
         await self.sender.sendPhoto(out)
         # TODO replace this dice hacking with something better like pydice
         #dice = [random.randint(1,6) for x in range(no_of_dice)]
@@ -111,7 +122,8 @@ To roll dice use the /roll command followed by any number of arguments of the fo
         #await self.sender.sendMessage(str(dice))
         
         my_listener = self.bot.create_listener() 
-        my_listener.capture([{'from':{'id':msg['from']['id']}}])
+        my_listener.capture([{'from':{'id':msg['from']['id']}},
+                             {'chat':{'id':msg['chat']['id']}}])
         with AnswerTimer() as timer:
             msg = await my_listener.wait()
 
@@ -124,17 +136,18 @@ To roll dice use the /roll command followed by any number of arguments of the fo
         except KeyError:
             await self.sender.sendMessage("Please answer with text based numbers.")
             return
-
+        
+        result = TrainResult(no_of_dice,total,answer,timer.total_time)
         # Report back to the user about their answer
         if answer == total:
             await self.sender.sendMessage(
                 'Correct: {:.3}s'.format(timer.total_time))
-            return timer.total_time
+            return result
             
         else:
             await self.sender.sendMessage(
                 'Wrong: {:.3}s'.format(timer.total_time))
-            return 10     
+            return result    
         
 
     @onerror()
@@ -185,3 +198,4 @@ To roll dice use the /roll command followed by any number of arguments of the fo
         elif data == 'Text':
             self.my_dice.mode = 'txt'
             self.my_coin.mode = 'txt'
+            
