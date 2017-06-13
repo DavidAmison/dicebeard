@@ -3,6 +3,7 @@ import random
 
 from . import image_dice as dice
 from . import image_coin as coin
+from . import die
 
 import re
 from timeit import default_timer

@@ -2,6 +2,7 @@
 @author: David Amison
 """
 import dice
+import pydice
 
 from pathlib import Path
 import re
@@ -27,19 +28,26 @@ class Dice:
         self.train_total = 0
         
     def train(self,i):
-        #Create the image
+        # Create the image
         x = int(math.sqrt(i))
         box = (x+4)*180
         out_img = Image.new('RGBA',[box,box])
         points = self.rand_points(i,[0,box,0,box],180)
+
+        # Roll the dice
+        roll = pydice.roll("{}d6".format(i))
+
+        # Place the dice on the image.
         total = 0
-        for n in range(0,i):
+        # for n in range(0,i):
+        for n, die in enumerate(roll.dice):
             #convert dice number into the relevant file
-            die = random.randint(1,6)
+            # die = random.randint(1,6)
             rotation = random.randint(0,360)
-            total += die
-            die_path = self.images_path / (str(die) + '.png')
-            die_img = Image.open(str(die_path))
+            total += die.result
+            # die_path = self.images_path / (str(die) + '.png')
+            # die_img = Image.open(str(die_path))
+            die_img = die.to_image()
             die_img = die_img.convert('RGBA').rotate(rotation,resample=Image.BICUBIC,expand=True)
             width, height = die_img.size
             #add the image to the output image
