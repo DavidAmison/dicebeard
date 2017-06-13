@@ -1,13 +1,12 @@
-"""
-@author: David Amison
-"""
 import os
+import random
 
 from . import image_dice as dice
 from . import image_coin as coin
 
 import re
-from timeit import default_timer as timer
+from timeit import default_timer
+from copy import deepcopy
 
 from pathlib import Path
 
@@ -16,9 +15,19 @@ import telepot.aio
 from telepot import glance
 from telepot.namedtuple import InlineKeyboardMarkup, InlineKeyboardButton
 
-from skybeard.utils import get_args
 from skybeard.beards import BeardChatHandler, ThatsNotMineException
-from skybeard.decorators import onerror, getargsorask
+from skybeard.decorators import onerror, getargsorask, getargs
+
+
+class AnswerTimer:
+    """Times the code within the `with` block."""
+    def __enter__(self):
+        self.start_time = default_timer()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.end_time = default_timer()
+        self.total_time = self.end_time - self.start_time
 
 
 class DiceBeard(BeardChatHandler):
@@ -26,8 +35,8 @@ class DiceBeard(BeardChatHandler):
     __commands__ = [
         ('roll', 'roll',
          'Rolls dice. Parses args and rolls.'),
-        ('train','train',
-         'does some training'),
+        ('train', 'train', 'does some training'),
+        ('trainmany', 'train_many', 'Trains dice roll <code>n</code> times.'),
         ('flip', 'flip_coin',
          'Flips a number of coins and returns the result'),
         ('mode', 'mode',
@@ -54,43 +63,72 @@ To roll dice use the /roll command followed by any number of arguments of the fo
         # Directory where image files are stored
         self.images_path = Path(os.path.dirname(__file__)) / 'images'
         self.font_path = self.images_path/'FiraSans-Regular.otf'
-        #Objects controllling rolling dice and tossing coins
+        # Objects controlling rolling dice and tossing coins
         self.my_dice = dice.Dice(self.images_path, self.font_path)
         self.my_coin = coin.Coin(self.images_path, self.font_path)
-
 
     _timeout = 90
 
     @onerror()
-    async def train(self,msg):
-        #Outputs a BytesIO stream and the total value of the dice
+
+    @getargs()
+    async def train_many(self, msg, no_of_times, no_of_dice=3):
+        try:
+            for i in range(int(no_of_times)):
+                # Change message to be something more pallatable
+                msg_edited = deepcopy(msg)
+                msg_edited['text'] = "/train {}".format(no_of_dice)
+                await self.train(msg_edited)
+        except ValueError:
+            await self.sender.sendMessage("I require an integer number of turns.")
+
+    @onerror()
+    @getargs()
+    async def train(self, msg, no_of_dice=3):
+        '''Game for training adding up dice.'''
+
+        try:
+            no_of_dice = int(no_of_dice)
+        except ValueError:
+            await self.sender.sendMessage("Sorry, '{}' is not an number.")
+            return
+
+        if no_of_dice > 10:
+            await self.sender.sendMessage("Sorry, that's too many dice! Try a number under 10 ;).")
+            return
+
+        # TODO removed image use while we fix a bug with image processing.
+        # i = no_of_dice
+        # out, total = self.my_dice.train(i)
+        # await self.sender.sendPhoto(out)
+        # TODO replace this dice hacking with something better like pydice
+        dice = [random.randint(1,6) for x in range(no_of_dice)]
+        total = sum(dice)
+        await self.sender.sendMessage(str(dice))
+        
         my_listener = self.bot.create_listener() 
         my_listener.capture([{'from':{'id':msg['from']['id']}}])
-        
-        input_args = get_args(msg)
-        i = 0        
+        with AnswerTimer() as timer:
+            msg = await my_listener.wait()
+
+        # Check if the answer is a number
         try:
-            i = int(input_args[0])
-            i = 10 if i > 10 else i
-        except Exception:
-            i = 3
-        out, total = self.my_dice.train(i) 
-        await self.sender.sendPhoto(out)
-        start = timer()
-        msg = await my_listener.wait()
-        end = timer()
-        elapsed = round(end - start,2)
-        answer = re.match(r'^\d+', msg['text'])
-        if answer:
-            if int(answer.group(0)) == total:
-                await self.sender.sendMessage('Correct: '+str(elapsed)+'s')
-            else:
-                await self.sender.sendMessage('Wrong')
+            answer = int(msg['text'])
+        except ValueError:
+            await self.sender.sendMessage("That answer was not a number.")
+            return
+        except KeyError:
+            await self.sender.sendMessage("Please answer with text based numbers.")
+            return
+
+        # Report back to the user about their answer
+        if answer == total:
+            await self.sender.sendMessage(
+                '✅ Correct: {:.3}s'.format(timer.total_time))
         else:
-            await self.sender.sendMessage('Wrong')
-        
-        
-        
+            await self.sender.sendMessage(
+                '❌ Wrong: {:.3}s'.format(timer.total_time))
+
     @onerror()
     @getargsorask([('input_args', 'What dice do you want to roll?')])
     async def roll(self, msg, input_args):
@@ -101,7 +139,6 @@ To roll dice use the /roll command followed by any number of arguments of the fo
             await self.sender.sendPhoto(open(str(out_dice), 'rb'))
         except FileNotFoundError:
             await self.sender.sendMessage(out_dice)
-            
 
     @onerror()
     @getargsorask([('input_args', 'How many coins do you want to flip?')])
