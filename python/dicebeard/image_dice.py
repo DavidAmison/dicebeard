@@ -19,52 +19,49 @@ import io
 class Dice:
 
     '''Class for implementing the python dice and producing images in Telegram'''
-    
+
     def __init__(self, images_folder, font_path=None, mode='pic'):
         self.images_path = Path(images_folder)
         self.font_path = Path(font_path)
         self.mode = mode
         #Variable for training
         self.train_total = 0
-        
-    def train(self,i):
-        # Create the image
+
+    def train(self, i):
+        # Create the blank image
         x = int(math.sqrt(i))
         box = (x+4)*180
-        out_img = Image.new('RGBA',[box,box])
-        points = self.rand_points(i,[0,box,0,box],180)
+        out_img = Image.new('RGBA', [box, box])
+        points = self.rand_points(i, [0, box, 0, box], 180)
 
         # Roll the dice
         roll = pydice.roll("{}d6".format(i))
 
         # Place the dice on the image.
-        total = 0
-        # for n in range(0,i):
         for n, die in enumerate(roll.dice):
-            #convert dice number into the relevant file
-            # die = random.randint(1,6)
-            rotation = random.randint(0,360)
-            total += die.result
-            # die_path = self.images_path / (str(die) + '.png')
-            # die_img = Image.open(str(die_path))
             die_img = die.to_image()
-            die_img = die_img.convert('RGBA').rotate(rotation,resample=Image.BICUBIC,expand=True)
+            rotation = random.randint(0, 360)
+            die_img = die_img.convert('RGBA').rotate(
+                rotation, resample=Image.BICUBIC, expand=True)
             width, height = die_img.size
-            #add the image to the output image
-            # TODO fix this bug 
-            out_img.paste(die_img,[int(points[n][0]-(width/2)),int(points[n][1]-(height/2))],die_img)
+            # add the image to the output image
+            out_img.paste(
+                die_img,
+                [int(points[n][0]-(width/2)), int(points[n][1]-(height/2))],
+                die_img
+            )
         bytes_out = io.BytesIO()
         out_img.save(bytes_out, format='PNG')
         bytes_out = bytes_out.getvalue()
-        return bytes_out, total
-    
-    def rand_points(self,n,box,excl_box=0):
+        return bytes_out, roll.sum
+
+    def rand_points(self, n, box, excl_box=0):
         '''Returns co-ordinates for n points within the 'box' area.'''
         points = []
-        for i in range(0,n):     
+        for i in range(0,n):
             accepted = False
             while accepted == False:
-                x_y = [random.randint(box[0]+excl_box,box[1]-excl_box),random.randint(box[0]+excl_box,box[1]-excl_box)] 
+                x_y = [random.randint(box[0]+excl_box,box[1]-excl_box),random.randint(box[0]+excl_box,box[1]-excl_box)]
                 accepted = True
                 for point in points:
                     if (abs(x_y[0]-point[0]) <= excl_box) and (abs(x_y[1]-point[1]) <= excl_box):
@@ -110,8 +107,8 @@ class Dice:
         else:
             # convert the rolls into strings
             return self.mode_txt(roll_out, total+mod, mod)
-        
-        
+
+
 
     def dice_image_manip(self, sides, value):
         '''Generates an image of a dice with the printed number value. Returns the
@@ -141,7 +138,7 @@ class Dice:
 
         # return the image
         return img
-    
+
     def train_pic(self, roll_out):
         '''Code for generating the large picture'''
         # First determine number of dice
@@ -215,7 +212,7 @@ class Dice:
             font = ImageFont.truetype(str(self.font_path),36)
         except AttributeError:
             font = ImageFont.load_default()
-            
+
         w, h = draw.textsize('TOTAL = '+str(total), font=font)
         draw.text(
             ((out_img_size[0]-w)/2, out_img_size[1]-50),
