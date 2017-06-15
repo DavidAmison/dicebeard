@@ -20,36 +20,36 @@ class BeardedRoll():
         '''Returns the dicec roll as an image. If scattered is set to true
         the dice in the image will be randomly arranged within the image'''
         no_of_dice = len(self.roll.dice)
-        #Maths to figure out how many rows and columns are needed        
+        #Maths to figure out how many rows and columns are needed
         rows = math.ceil(math.sqrt(dimen[1]*no_of_dice/dimen[0]))
         cols = math.ceil(math.sqrt(dimen[0]*no_of_dice/dimen[0]))
-        
+
         #Generates the array of points for where each dice will go (x,y,rotation)
-        if scattered:             
+        if scattered:
             box = (int(rows*self._die_size*2.5),int(cols*self._die_size*2.5))
             points = self._rand_points(no_of_dice,box,180)
             out_img = Image.new('RGBA', box)
-        else: 
+        else:
             points = []
             for i in range(0,rows):
                 for j in range(0,cols):
                     points.append((j*self._die_size+5,i*self._die_size+5,0))
             out_img = Image.new('RGBA', (10+rows*self._die_size, 10+cols*self._die_size))
-                     
+
         for i, die in enumerate(self.roll.dice):
             die_img = die.to_image()
             die_img = die_img.convert('RGBA').rotate(
                 points[i][2], resample=Image.BICUBIC, expand=True)
             corner = (int(points[i][0]-90),int(points[i][1]-90))
             out_img.paste(die_img, corner, die_img)
-                
+
         return out_img.resize(dimen,  Image.ANTIALIAS)
-    
+
     def _rand_points(self, n, box, spread):
         '''Generate n random points in a box seperated by a minimum distance'''
         #Genereate the initial set of points
         points = [[random.randint(0,box[0]-spread),
-                   random.randint(0,box[1]-spread), 
+                   random.randint(0,box[1]-spread),
                    random.randint(0,360)] for x in range(0,n)]
         #Calculate the 'force' each point is experiencing
         while 1:
@@ -77,7 +77,7 @@ class BeardedRoll():
                 #Append to a list of forces
                 forces[i] = [tot_fx,tot_fy]
             #print(points)
-            #print(forces)    
+            #print(forces)
             #If all forces are zero then we are good, else move the points and repeat
             if sum([f[0]+f[1] for f in forces]) == 0:
                 print(points)
@@ -86,5 +86,4 @@ class BeardedRoll():
                 #Move the points the distance denoted by forces
                 for i in range(0,n):
                     points[i][0] += forces[i][0]
-                    points[i][1] += forces[i][1] 
-                        
+                    points[i][1] += forces[i][1]
