@@ -4,8 +4,6 @@ from timeit import default_timer
 import os
 import io
 
-import pydice
-
 import telepot
 import telepot.aio
 from telepot import glance
@@ -16,8 +14,7 @@ from skybeard.decorators import onerror, getargsorask, getargs
 
 from . import image_dice as dice
 from . import image_coin as coin
-from . import die               # adds Die.to_image()
-from .BeardedDice import roll
+from .skb_roll.skb_roll import roll
 
 
 class AnswerTimer:
@@ -46,11 +43,14 @@ class DiceBeard(BeardChatHandler):
           ' between picture, icons and text')),
     ]
 
-    __userhelp__ = """Can roll dice or flip coins.
-
-To roll dice use the /roll command followed by any number of arguments of the form 3d6+5 (can be + or -) seperated by spaces. Currently, supported dice for producing images are d4, d6, d8, d10, d12 and d20. To flip coins simply type /flip followed by the number of coins you would like to flip (e.g /flip 10 will filp 10 coins)
-
-    """.strip()
+    __userhelp__ = ('Can roll dice or flip coins.\n'
+                    'To roll dice use the /roll command followed by any '
+                    'number of arguments of the form 3d6+5 (can be + or -) '
+                    'seperated by spaces. Currently, supported dice for '
+                    'producing images are d4, d6, d8, d10, d12 and d20. To '
+                    'flip coins simply type /flip followed by the number of '
+                    'coins you would like to flip (e.g /flip 10 will filp 10 '
+                    'coins)').strip()
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -70,7 +70,7 @@ To roll dice use the /roll command followed by any number of arguments of the fo
         self.my_coin = coin.Coin(self.images_path, self.font_path)
 
     _timeout = 90
-         
+
     @onerror()
     @getargs()
     async def train_many(self, msg, no_of_times, no_of_dice=3):
@@ -111,7 +111,7 @@ To roll dice use the /roll command followed by any number of arguments of the fo
         bytes_output = bytes_output.getvalue()
 
         await self.sender.sendPhoto(bytes_output)
-        
+
         return
         '''
         # TODO removed image use while we fix a bug with image processing.
