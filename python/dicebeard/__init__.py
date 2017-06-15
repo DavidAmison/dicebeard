@@ -1,13 +1,9 @@
+from copy import deepcopy
+from pathlib import Path
+from timeit import default_timer
 import os
 
-from . import image_dice as dice
-from . import image_coin as coin
-from . import die
-
-from timeit import default_timer
-from copy import deepcopy
-
-from pathlib import Path
+import pydice
 
 import telepot
 import telepot.aio
@@ -16,6 +12,10 @@ from telepot.namedtuple import InlineKeyboardMarkup, InlineKeyboardButton
 
 from skybeard.beards import BeardChatHandler, ThatsNotMineException
 from skybeard.decorators import onerror, getargsorask, getargs
+
+from . import image_dice as dice
+from . import image_coin as coin
+from . import die               # adds Die.to_image()
 
 
 class AnswerTimer:
@@ -113,7 +113,6 @@ To roll dice use the /roll command followed by any number of arguments of the fo
         # TODO removed image use while we fix a bug with image processing.
         out, total = self.my_dice.train(no_of_dice)
         await self.sender.sendPhoto(out)
-        # TODO replace this dice hacking with something better like pydice
 
         my_listener = self.bot.create_listener()
         my_listener.capture([{'from': {'id': msg['from']['id']}}, 
@@ -144,15 +143,19 @@ To roll dice use the /roll command followed by any number of arguments of the fo
             return result
 
     @onerror()
-    @getargsorask([('input_args', 'What dice do you want to roll?')])
-    async def roll(self, msg, input_args):
+    @getargsorask([('roll_expr', 'What dice do you want to roll?')], return_string=True)
+    async def roll(self, msg, roll_expr):
+        self.logger.debug(roll_expr)
+        r = pydice.roll(roll_expr)
+        await self.sender.sendMessage(format_roll_for_tg(r))
+        # TODO reimplement with images for pydice
         # Roll the dice
-        out_dice = self.my_dice.roll_dice(input_args)
-        # Try and send picture, if fails then try and send as text
-        try:
-            await self.sender.sendPhoto(open(str(out_dice), 'rb'))
-        except FileNotFoundError:
-            await self.sender.sendMessage(out_dice)
+        # out_dice = self.my_dice.roll_dice(roll_expr)
+        # # Try and send picture, if fails then try and send as text
+        # try:
+        #     await self.sender.sendPhoto(open(str(out_dice), 'rb'))
+        # except FileNotFoundError:
+        #     await self.sender.sendMessage(out_dice)
 
     @onerror()
     @getargsorask([('input_args', 'How many coins do you want to flip?')])
@@ -191,3 +194,15 @@ To roll dice use the /roll command followed by any number of arguments of the fo
         elif data == 'Text':
             self.my_dice.mode = 'txt'
             self.my_coin.mode = 'txt'
+
+
+def format_roll_for_tg(roll):
+    ret_str = "+".join(str(i.result) for i in roll.dice)
+    if roll.total_mod < 0:
+        ret_str += "+({})".format(roll.total_mod)
+    elif roll.total_mod > 0:
+        ret_str += "+(+{})".format(roll.total_mod)
+
+    ret_str += " = {}".format(roll.total)
+
+    return ret_str
