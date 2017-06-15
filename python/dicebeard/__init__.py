@@ -16,6 +16,7 @@ from skybeard.decorators import onerror, getargsorask, getargs
 from . import image_dice as dice
 from . import image_coin as coin
 from . import die               # adds Die.to_image()
+from .BeardedDice import BeardedDice
 
 
 class AnswerTimer:
@@ -109,7 +110,14 @@ To roll dice use the /roll command followed by any number of arguments of the fo
         if no_of_dice > 10:
             await self.sender.sendMessage("Sorry, that's too many dice! Try a number under 10 ;).")
             return
-
+        
+        roll = BeardedDice('{}d6'.format(no_of_dice))
+        out = roll.to_image()
+        await self.sender.sendPhoto(out)
+        #print(roll.roll_result)
+        #print(roll.roll_result.dice[0].faces)
+        return
+        '''
         # TODO removed image use while we fix a bug with image processing.
         out, total = self.my_dice.train(no_of_dice)
         await self.sender.sendPhoto(out)
@@ -141,9 +149,10 @@ To roll dice use the /roll command followed by any number of arguments of the fo
             await self.sender.sendMessage(
                 'Wrong: {:.3}s'.format(timer.total_time))
             return result
+        '''
 
     @onerror()
-    @getargsorask([('roll_expr', 'What dice do you want to roll?')], return_string=True)
+    @getargsorask([('roll_expr', 'What dice do you want to roll?')])
     async def roll(self, msg, roll_expr):
         self.logger.debug(roll_expr)
         r = pydice.roll(roll_expr)
