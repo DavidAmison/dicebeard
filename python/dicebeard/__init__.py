@@ -17,7 +17,7 @@ from skybeard.decorators import onerror, getargsorask, getargs
 from . import image_dice as dice
 from . import image_coin as coin
 from . import die               # adds Die.to_image()
-from .BeardedDice import roll as bearded_roll
+from .BeardedDice import roll
 
 
 class AnswerTimer:
@@ -30,14 +30,6 @@ class AnswerTimer:
         self.end_time = default_timer()
         self.total_time = self.end_time - self.start_time
 
-
-class TrainResult:
-    """Stores the result of a training round"""
-    def __init__(self,num_of_dice, roll, guess, time):
-        self.num_of_dice = num_of_dice
-        self.roll = roll
-        self.guess = guess
-        self.time = time
 
 
 class DiceBeard(BeardChatHandler):
@@ -112,15 +104,14 @@ To roll dice use the /roll command followed by any number of arguments of the fo
             await self.sender.sendMessage("Sorry, that's too many dice! Try a number under 10 ;).")
             return
 
-        roll = bearded_roll('{}d6'.format(no_of_dice))
-        out_img = roll.to_image()
+        result = roll('{}d6'.format(no_of_dice))
+        out_img = result.to_image(scattered=True)
         bytes_output = io.BytesIO()
         out_img.save(bytes_output, format='PNG')
         bytes_output = bytes_output.getvalue()
 
         await self.sender.sendPhoto(bytes_output)
-        #print(roll.roll_result)
-        #print(roll.roll_result.dice[0].faces)
+        
         return
         '''
         # TODO removed image use while we fix a bug with image processing.
