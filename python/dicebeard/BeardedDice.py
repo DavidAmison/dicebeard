@@ -14,7 +14,7 @@ class BeardedDice():
         self.images_path = Path(os.path.dirname(__file__)) / 'images'
         self._die_size = 125
          
-    def to_image(self,scattered=False,dimen=(100,100)):
+    def to_image(self,scattered=False,dimen=(200,200)):
         '''Returns the dicec roll as an image. If scattered is set to true
         the dice in the image will be randomly arranged within the image'''
         #TODO implement scattered and non-scattered
@@ -36,7 +36,8 @@ class BeardedDice():
                 x_co = 5
                 y_co += self._die_size
             else:
-                x_co += self._die_size      
+                x_co += self._die_size  
+        out_img = out_img.resize(dimen, Image.ANTIALIAS)
         bytes_out = io.BytesIO()
         out_img.save(bytes_out,format='PNG')
         bytes_out = bytes_out.getvalue()
