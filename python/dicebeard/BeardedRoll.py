@@ -40,26 +40,51 @@ class BeardedRoll():
             die_img = die.to_image()
             die_img = die_img.convert('RGBA').rotate(
                 points[i][2], resample=Image.BICUBIC, expand=True)
-            out_img.paste(die_img, (points[i][0],points[i][1]), die_img)
+            corner = (int(points[i][0]-90),int(points[i][1]-90))
+            out_img.paste(die_img, corner, die_img)
                 
         return out_img.resize(dimen,  Image.ANTIALIAS)
     
-    
-    def _rand_points(self, n, box, border=0):
-            '''Returns co-ordinates for n points within the 'box' area.'''
-            points = []
-            for i in range(0,n):
-                accepted = False
-                while accepted == False:
-                    x_y_r = [random.randint(0,box[0]-border),
-                             random.randint(0,box[1]-border),
-                             random.randint(0,360)]
-                    accepted = True
-                    for point in points:
-                        if (abs(x_y_r[0]-point[0]) <= border) and (abs(x_y_r[1]-point[1]) <= border):
-                            accepted = False
-                #print('point found: {}'.format(x_y_r))
-                points.append(x_y_r)
-            return points
-    
-    
+    def _rand_points(self, n, box, spread):
+        '''Generate n random points in a box seperated by a minimum distance'''
+        #Genereate the initial set of points
+        points = [[random.randint(0,box[0]-spread),
+                   random.randint(0,box[1]-spread), 
+                   random.randint(0,360)] for x in range(0,n)]
+        #Calculate the 'force' each point is experiencing
+        while 1:
+            forces = [None]*n
+            for i, point in enumerate(points):
+                tot_fx = 0
+                tot_fy = 0
+                for repel in [x for j,x in enumerate(points) if j != i]:
+                    #print(point,repel)
+                    sep_x = point[0] - repel[0]
+                    sep_y = point[1] - repel[1]
+                    #To account for occasional situation where points are on top of each other
+                    sep_x += 5 if sep_x == 0 else 0
+                    sep_y += 5 if sep_y == 0 else 0
+                    dist_sq = sep_x*sep_x + sep_y*sep_y
+                    tot_fx += math.ceil(5*spread*sep_x/dist_sq) if (dist_sq-spread*spread) < 0 else 0
+                    tot_fy += math.ceil(5*spread*sep_y/dist_sq) if (dist_sq-spread*spread) < 0 else 0
+                #Check distance to walls
+                point[0] += 5 if point[0] == 0 else 0
+                point[1] += 5 if point[1] == 0 else 0
+                tot_fx += math.ceil(abs(15*spread/point[0])) if point[0] < spread/2 else 0
+                tot_fx -= math.ceil(abs(15*spread/(point[0]-box[0]))) if point[0] > (box[0]-spread/2) else 0
+                tot_fy += math.ceil(abs(15*spread/point[1])) if point[1] < spread/2 else 0
+                tot_fy -= math.ceil(abs(15*spread/(point[1]-box[1]))) if point[1] > (box[1]-spread/2) else 0
+                #Append to a list of forces
+                forces[i] = [tot_fx,tot_fy]
+            #print(points)
+            #print(forces)    
+            #If all forces are zero then we are good, else move the points and repeat
+            if sum([f[0]+f[1] for f in forces]) == 0:
+                print(points)
+                return points
+            else:
+                #Move the points the distance denoted by forces
+                for i in range(0,n):
+                    points[i][0] += forces[i][0]
+                    points[i][1] += forces[i][1] 
+                        

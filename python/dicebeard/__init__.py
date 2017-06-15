@@ -70,7 +70,7 @@ To roll dice use the /roll command followed by any number of arguments of the fo
         self.my_coin = coin.Coin(self.images_path, self.font_path)
 
     _timeout = 90
-
+         
     @onerror()
     @getargs()
     async def train_many(self, msg, no_of_times, no_of_dice=3):
