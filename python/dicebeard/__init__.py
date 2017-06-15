@@ -2,6 +2,7 @@ from copy import deepcopy
 from pathlib import Path
 from timeit import default_timer
 import os
+import io
 
 import pydice
 
@@ -16,7 +17,7 @@ from skybeard.decorators import onerror, getargsorask, getargs
 from . import image_dice as dice
 from . import image_coin as coin
 from . import die               # adds Die.to_image()
-from .BeardedDice import BeardedDice
+from .BeardedDice import roll as bearded_roll
 
 
 class AnswerTimer:
@@ -110,10 +111,14 @@ To roll dice use the /roll command followed by any number of arguments of the fo
         if no_of_dice > 10:
             await self.sender.sendMessage("Sorry, that's too many dice! Try a number under 10 ;).")
             return
-        
-        roll = BeardedDice('{}d6'.format(no_of_dice))
-        out = roll.to_image()
-        await self.sender.sendPhoto(out)
+
+        roll = bearded_roll('{}d6'.format(no_of_dice))
+        out_img = roll.to_image()
+        bytes_output = io.BytesIO()
+        out_img.save(bytes_output, format='PNG')
+        bytes_output = bytes_output.getvalue()
+
+        await self.sender.sendPhoto(bytes_output)
         #print(roll.roll_result)
         #print(roll.roll_result.dice[0].faces)
         return
@@ -123,7 +128,7 @@ To roll dice use the /roll command followed by any number of arguments of the fo
         await self.sender.sendPhoto(out)
 
         my_listener = self.bot.create_listener()
-        my_listener.capture([{'from': {'id': msg['from']['id']}}, 
+        my_listener.capture([{'from': {'id': msg['from']['id']}},
                              {'chat': {'id': msg['chat']['id']}}])
         with AnswerTimer() as timer:
             msg = await my_listener.wait()
