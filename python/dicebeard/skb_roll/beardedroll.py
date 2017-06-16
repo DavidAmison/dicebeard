@@ -22,24 +22,33 @@ class BeardedRoll():
     def dice(self):
         return [BeardedDie(d) for d in self.roll.dice]
 
-    def to_text(self):
+    def to_text(self, with_total=True):
         ret_str = "+".join(str(i.result) for i in self.dice)
         if self.total_mod < 0:
             ret_str += "+({})".format(self.total_mod)
         elif self.total_mod > 0:
             ret_str += "+(+{})".format(self.total_mod)
 
-        ret_str += " = {}".format(self.total)
+        if with_total:
+            ret_str += " = {}".format(self.total)
 
         return ret_str
 
-    def to_image(self, scattered=False, dimen=(200, 200)):
+    def to_image(self, scattered=False, dimen=(200, 200), with_total=False):
         '''
         Returns the dicec roll as an image.
 
         If scattered is set to true the dice in the image will be randomly
         arranged within the image
         '''
+
+        # TODO implement totals in the image.
+        #
+        # When this has happened, change with_total to True.
+        if with_total:
+            raise NotImplementedError(
+                "Totals are not currently supported in this mode.")
+
         no_of_dice = len(self.roll.dice)
         # Maths to figure out how many rows and columns are needed
         rows = math.ceil(math.sqrt(dimen[1]*no_of_dice/dimen[0]))

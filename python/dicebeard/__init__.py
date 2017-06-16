@@ -31,18 +31,15 @@ class AnswerTimer:
 class DiceBeard(BeardChatHandler):
 
     __commands__ = [
-        ('roll', 'roll',
-         'Rolls dice. Parses args and rolls.'),
+        ('roll', 'roll', 'Rolls dice. Parses args and rolls.'),
         ('train', 'train', 'does some training'),
         ('trainmany', 'train_many', 'Trains dice roll <code>n</code> times.'),
-        ('flip', 'flip_coin',
-         'Flips a number of coins and returns the result'),
-        ('mode', 'mode',
-         ('Can change the output mode of the bot'
-          ' between picture, icons and text')),
+        ('flip', 'flip_coin', 'Flips a number of coins and returns the result'),
+        ('mode', 'mode', ('Can change the output mode of the bot'
+                          ' between picture, icons and text')),
     ]
 
-    __userhelp__ = ('Can roll dice or flip coins.\n'
+    __userhelp__ = ('Can roll dice or flip coins.\n\n'
                     'To roll dice use the /roll command followed by any '
                     'number of arguments of the form 3d6+5 (can be + or -) '
                     'seperated by spaces. Currently, supported dice for '
@@ -94,6 +91,13 @@ class DiceBeard(BeardChatHandler):
             await self.sender.sendMessage(
                 "I require an integer number of turns.")
 
+    async def _create_personal_listener_from_msg(self, msg):
+        my_listener = self.bot.create_listener()
+        my_listener.capture([{'from': {'id': msg['from']['id']}},
+                             {'chat': {'id': msg['chat']['id']}}])
+
+        return my_listener
+
     @onerror()
     @getargs()
     async def train(self, msg, no_of_dice=3):
@@ -110,22 +114,10 @@ class DiceBeard(BeardChatHandler):
             return
 
         result = roll('{}d6'.format(no_of_dice))
-        out_img = result.to_image(scattered=True)
-        bytes_output = io.BytesIO()
-        out_img.save(bytes_output, format='PNG')
-        bytes_output = bytes_output.getvalue()
+        await self._send_roll(result, with_total=False)
 
-        await self.sender.sendPhoto(bytes_output)
+        my_listener = await self._create_personal_listener_from_msg(msg)
 
-        return
-        '''
-        # TODO removed image use while we fix a bug with image processing.
-        out, total = self.my_dice.train(no_of_dice)
-        await self.sender.sendPhoto(out)
-
-        my_listener = self.bot.create_listener()
-        my_listener.capture([{'from': {'id': msg['from']['id']}},
-                             {'chat': {'id': msg['chat']['id']}}])
         with AnswerTimer() as timer:
             msg = await my_listener.wait()
 
@@ -139,18 +131,17 @@ class DiceBeard(BeardChatHandler):
             await self.sender.sendMessage("Please answer with text based numbers.")
             return
 
-        result = TrainResult(no_of_dice, total, answer, timer.total_time)
+        # result = TrainResult(no_of_dice, total, answer, timer.total_time)
         # Report back to the user about their answer
-        if answer == total:
+        if answer == result.total:
             await self.sender.sendMessage(
                 'Correct: {:.3}s'.format(timer.total_time))
-            return result
+            # return result
 
         else:
             await self.sender.sendMessage(
                 'Wrong: {:.3}s'.format(timer.total_time))
-            return result
-        '''
+            # return result
 
     async def _send_roll(self, roll, *args, **kwargs):
         """Sends roll through telegram using preferred method."""
