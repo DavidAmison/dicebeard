@@ -6,7 +6,7 @@ from pathlib import Path
 
 from PIL import Image, ImageFont, ImageDraw
 
-from .BeardedDie import BeardedDie
+from .beardeddie import BeardedDie
 
 class BeardedRoll():
 

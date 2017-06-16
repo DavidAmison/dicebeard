@@ -14,7 +14,7 @@ from skybeard.decorators import onerror, getargsorask, getargs
 
 # from . import image_dice as dice
 # from . import image_coin as coin
-from .skb_roll.skb_roll import roll
+from .skb_roll import roll
 
 
 class AnswerTimer:

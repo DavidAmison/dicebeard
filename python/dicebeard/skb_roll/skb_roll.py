@@ -1,5 +1,5 @@
 import pydice
-from .BeardedRoll import BeardedRoll
+from .beardedroll import BeardedRoll
 
 
 def roll(roll_expr):
