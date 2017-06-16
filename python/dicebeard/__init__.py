@@ -28,7 +28,6 @@ class AnswerTimer:
         self.total_time = self.end_time - self.start_time
 
 
-
 class DiceBeard(BeardChatHandler):
 
     __commands__ = [
@@ -86,9 +85,11 @@ class DiceBeard(BeardChatHandler):
                 else:
                     total_score += 10
             await self.sender.sendMessage(
-                    "Your total score is {:.3} for {} turns".format(total_score, no_of_times))
+                    "Your total score is {:.3} for {} turns".format(
+                        total_score, no_of_times))
         except ValueError:
-            await self.sender.sendMessage("I require an integer number of turns.")
+            await self.sender.sendMessage(
+                "I require an integer number of turns.")
 
     @onerror()
     @getargs()
@@ -101,7 +102,8 @@ class DiceBeard(BeardChatHandler):
             return
 
         if no_of_dice > 10:
-            await self.sender.sendMessage("Sorry, that's too many dice! Try a number under 10 ;).")
+            await self.sender.sendMessage(
+                "Sorry, that's too many dice! Try a number under 10 ;).")
             return
 
         result = roll('{}d6'.format(no_of_dice))
@@ -151,7 +153,7 @@ class DiceBeard(BeardChatHandler):
     @getargsorask([('roll_expr', 'What dice do you want to roll?')])
     async def roll(self, msg, roll_expr):
         self.logger.debug(roll_expr)
-        r = pydice.roll(roll_expr)
+        r = roll(roll_expr)
         await self.sender.sendMessage(format_roll_for_tg(r))
         # TODO reimplement with images for pydice
         # Roll the dice
