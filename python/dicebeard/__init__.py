@@ -1,6 +1,5 @@
 from copy import deepcopy
 from pathlib import Path
-from timeit import default_timer
 import os
 import io
 
@@ -15,17 +14,7 @@ from skybeard.decorators import onerror, getargsorask, getargs
 # from . import image_dice as dice
 # from . import image_coin as coin
 from .skb_roll import roll
-
-
-class AnswerTimer:
-    """Times the code within the `with` block."""
-    def __enter__(self):
-        self.start_time = default_timer()
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.end_time = default_timer()
-        self.total_time = self.end_time - self.start_time
+from .helper import TrainResult, AnswerTimer
 
 
 class DiceBeard(BeardChatHandler):
@@ -75,21 +64,25 @@ class DiceBeard(BeardChatHandler):
     async def train_many(self, msg, no_of_times, no_of_dice=3):
         total_score = 0
         try:
-            for i in range(int(no_of_times)):
-                # Change message to be something more pallatable
-                msg_edited = deepcopy(msg)
-                msg_edited['text'] = "/train {}".format(no_of_dice)
-                result = await self.train(msg_edited)
-                if result.roll == result.guess:
-                    total_score += result.time
-                else:
-                    total_score += 10
-            await self.sender.sendMessage(
-                    "Your total score is {:.3} for {} turns".format(
-                        total_score, no_of_times))
+            no_of_times = int(no_of_times)
         except ValueError:
             await self.sender.sendMessage(
                 "I require an integer number of turns.")
+
+        for i in range(int(no_of_times)):
+            # Change message to be something more pallatable
+            msg_edited = deepcopy(msg)
+            msg_edited['text'] = "/train {}".format(no_of_dice)
+            result = await self.train(msg_edited)
+            if result.correct:
+                total_score += result.time
+            else:
+                total_score += 10.
+
+        assert isinstance(total_score, float)
+        await self.sender.sendMessage(
+                "Your total score is {:.3} for {} turns".format(
+                    total_score, no_of_times))
 
     async def _create_personal_listener_from_msg(self, msg):
         my_listener = self.bot.create_listener()
@@ -113,8 +106,8 @@ class DiceBeard(BeardChatHandler):
                 "Sorry, that's too many dice! Try a number under 10 ;).")
             return
 
-        result = roll('{}d6'.format(no_of_dice))
-        await self._send_roll(result, with_total=False)
+        r = roll('{}d6'.format(no_of_dice))
+        await self._send_roll(r, with_total=False)
 
         my_listener = await self._create_personal_listener_from_msg(msg)
 
@@ -131,17 +124,18 @@ class DiceBeard(BeardChatHandler):
             await self.sender.sendMessage("Please answer with text based numbers.")
             return
 
-        # result = TrainResult(no_of_dice, total, answer, timer.total_time)
+        result = TrainResult(r, answer, timer.total_time)
+
         # Report back to the user about their answer
-        if answer == result.total:
+        if result.correct:
             await self.sender.sendMessage(
                 'Correct: {:.3}s'.format(timer.total_time))
-            # return result
 
         else:
             await self.sender.sendMessage(
                 'Wrong: {:.3}s'.format(timer.total_time))
-            # return result
+
+        return result
 
     async def _send_roll(self, roll, *args, **kwargs):
         """Sends roll through telegram using preferred method."""
