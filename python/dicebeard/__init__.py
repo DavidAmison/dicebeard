@@ -61,6 +61,9 @@ class DiceBeard(BeardChatHandler):
                      text='Text', callback_data=self.serialize('Text'))],
             ])
 
+        # Can be 'text' or 'image'
+        self.mode = 'image'
+
         # Directory where image files are stored
         self.images_path = Path(os.path.dirname(__file__)) / 'images'
         self.font_path = self.images_path/'FiraSans-Regular.otf'
@@ -149,20 +152,36 @@ class DiceBeard(BeardChatHandler):
             return result
         '''
 
+    async def _send_roll(self, roll, *args, **kwargs):
+        """Sends roll through telegram using preferred method."""
+
+        try:
+            if self.mode == "text":
+                await self.sender.sendMessage(roll.to_text(*args, **kwargs))
+            elif self.mode == "image":
+                # TODO fix the bug where if it's not scattered, it looks like
+                # trash
+                if "scattered" not in kwargs:
+                    kwargs['scattered'] = True
+                out_img = roll.to_image(*args, **kwargs)
+                bytes_output = io.BytesIO()
+                out_img.save(bytes_output, format='PNG')
+                bytes_output = bytes_output.getvalue()
+
+                await self.sender.sendPhoto(bytes_output)
+            else:
+                raise NotImplementedError("That mode is not implemented: {}".format(self.mode))
+        except NotImplementedError:
+            await self.sender.sendMessage(
+                "Mode not supported with this expression.")
+            await self.sender.sendMessage(roll.to_text())
+
     @onerror()
     @getargsorask([('roll_expr', 'What dice do you want to roll?')])
     async def roll(self, msg, roll_expr):
         self.logger.debug(roll_expr)
         r = roll(roll_expr)
-        await self.sender.sendMessage(r.to_text())
-        # TODO reimplement with images for pydice
-        # Roll the dice
-        # out_dice = self.my_dice.roll_dice(roll_expr)
-        # # Try and send picture, if fails then try and send as text
-        # try:
-        #     await self.sender.sendPhoto(open(str(out_dice), 'rb'))
-        # except FileNotFoundError:
-        #     await self.sender.sendMessage(out_dice)
+        await self._send_roll(r)
 
     @onerror()
     @getargsorask([('input_args', 'How many coins do you want to flip?')])
