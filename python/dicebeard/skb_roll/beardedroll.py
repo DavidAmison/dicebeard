@@ -22,6 +22,17 @@ class BeardedRoll():
     def dice(self):
         return [BeardedDie(d) for d in self.roll.dice]
 
+    def to_text(self):
+        ret_str = "+".join(str(i.result) for i in self.dice)
+        if self.total_mod < 0:
+            ret_str += "+({})".format(self.total_mod)
+        elif self.total_mod > 0:
+            ret_str += "+(+{})".format(self.total_mod)
+
+        ret_str += " = {}".format(self.total)
+
+        return ret_str
+
     def to_image(self, scattered=False, dimen=(200, 200)):
         '''
         Returns the dicec roll as an image.

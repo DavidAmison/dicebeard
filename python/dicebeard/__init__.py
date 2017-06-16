@@ -154,7 +154,7 @@ class DiceBeard(BeardChatHandler):
     async def roll(self, msg, roll_expr):
         self.logger.debug(roll_expr)
         r = roll(roll_expr)
-        await self.sender.sendMessage(format_roll_for_tg(r))
+        await self.sender.sendMessage(r.to_text())
         # TODO reimplement with images for pydice
         # Roll the dice
         # out_dice = self.my_dice.roll_dice(roll_expr)
@@ -202,15 +202,3 @@ class DiceBeard(BeardChatHandler):
         # elif data == 'Text':
         #     self.my_dice.mode = 'txt'
         #     self.my_coin.mode = 'txt'
-
-
-def format_roll_for_tg(roll):
-    ret_str = "+".join(str(i.result) for i in roll.dice)
-    if roll.total_mod < 0:
-        ret_str += "+({})".format(roll.total_mod)
-    elif roll.total_mod > 0:
-        ret_str += "+(+{})".format(roll.total_mod)
-
-    ret_str += " = {}".format(roll.total)
-
-    return ret_str
