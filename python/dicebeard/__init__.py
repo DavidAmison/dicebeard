@@ -12,8 +12,8 @@ from telepot.namedtuple import InlineKeyboardMarkup, InlineKeyboardButton
 from skybeard.beards import BeardChatHandler, ThatsNotMineException
 from skybeard.decorators import onerror, getargsorask, getargs
 
-from . import image_dice as dice
-from . import image_coin as coin
+# from . import image_dice as dice
+# from . import image_coin as coin
 from .skb_roll.skb_roll import roll
 
 
@@ -66,8 +66,8 @@ class DiceBeard(BeardChatHandler):
         self.images_path = Path(os.path.dirname(__file__)) / 'images'
         self.font_path = self.images_path/'FiraSans-Regular.otf'
         # Objects controlling rolling dice and tossing coins
-        self.my_dice = dice.Dice(self.images_path, self.font_path)
-        self.my_coin = coin.Coin(self.images_path, self.font_path)
+        # self.my_dice = dice.Dice(self.images_path, self.font_path)
+        # self.my_coin = coin.Coin(self.images_path, self.font_path)
 
     _timeout = 90
 
@@ -165,15 +165,16 @@ class DiceBeard(BeardChatHandler):
     @onerror()
     @getargsorask([('input_args', 'How many coins do you want to flip?')])
     async def flip_coin(self, msg, input_args):
+        raise NotImplementedError
 
-        out_coin = self.my_coin.flip_coin(input_args)
+        # out_coin = self.my_coin.flip_coin(input_args)
 
-        # Check which mode the user is in and output the correct format. Try
-        # and send picture, if fails then try and send as text
-        try:
-            await self.sender.sendPhoto(out_coin.open('rb'))
-        except AttributeError:
-            await self.sender.sendMessage(out_coin)
+        # # Check which mode the user is in and output the correct format. Try
+        # # and send picture, if fails then try and send as text
+        # try:
+        #     await self.sender.sendPhoto(out_coin.open('rb'))
+        # except AttributeError:
+        #     await self.sender.sendMessage(out_coin)
 
     @onerror()
     async def mode(self, msg):
@@ -193,12 +194,12 @@ class DiceBeard(BeardChatHandler):
             text="Mode changed to: {}".format(data),
             reply_markup=self.keyboard)
 
-        if data == 'Picture':
-            self.my_dice.mode = 'pic'
-            self.my_coin.mode = 'pic'
-        elif data == 'Text':
-            self.my_dice.mode = 'txt'
-            self.my_coin.mode = 'txt'
+        # if data == 'Picture':
+        #     self.my_dice.mode = 'pic'
+        #     self.my_coin.mode = 'pic'
+        # elif data == 'Text':
+        #     self.my_dice.mode = 'txt'
+        #     self.my_coin.mode = 'txt'
 
 
 def format_roll_for_tg(roll):
