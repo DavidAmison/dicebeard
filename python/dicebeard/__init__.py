@@ -1,6 +1,4 @@
 from copy import deepcopy
-from pathlib import Path
-import os
 import io
 
 import telepot
@@ -11,10 +9,9 @@ from telepot.namedtuple import InlineKeyboardMarkup, InlineKeyboardButton
 from skybeard.beards import BeardChatHandler, ThatsNotMineException
 from skybeard.decorators import onerror, getargsorask, getargs
 
-# from . import image_dice as dice
-# from . import image_coin as coin
 from .skb_roll import roll
 from .helper import TrainResult, AnswerTimer
+from .utils import image_to_bytesio
 
 
 class DiceBeard(BeardChatHandler):
@@ -42,20 +39,13 @@ class DiceBeard(BeardChatHandler):
         self.keyboard = InlineKeyboardMarkup(
             inline_keyboard=[
                 [InlineKeyboardButton(
-                    text='Picture', callback_data=self.serialize('Picture')),
+                    text='Picture', callback_data=self.serialize('image')),
                  InlineKeyboardButton(
-                     text='Text', callback_data=self.serialize('Text'))],
+                     text='Text', callback_data=self.serialize('text'))],
             ])
 
         # Can be 'text' or 'image'
         self.mode = 'image'
-
-        # Directory where image files are stored
-        self.images_path = Path(os.path.dirname(__file__)) / 'images'
-        self.font_path = self.images_path/'FiraSans-Regular.otf'
-        # Objects controlling rolling dice and tossing coins
-        # self.my_dice = dice.Dice(self.images_path, self.font_path)
-        # self.my_coin = coin.Coin(self.images_path, self.font_path)
 
     _timeout = 90
 
@@ -121,7 +111,8 @@ class DiceBeard(BeardChatHandler):
             await self.sender.sendMessage("That answer was not a number.")
             return
         except KeyError:
-            await self.sender.sendMessage("Please answer with text based numbers.")
+            await self.sender.sendMessage(
+                "Please answer with text based numbers.")
             return
 
         result = TrainResult(r, answer, timer.total_time)
@@ -149,13 +140,12 @@ class DiceBeard(BeardChatHandler):
                 if "scattered" not in kwargs:
                     kwargs['scattered'] = True
                 out_img = roll.to_image(*args, **kwargs)
-                bytes_output = io.BytesIO()
-                out_img.save(bytes_output, format='PNG')
-                bytes_output = bytes_output.getvalue()
+                bytes_output = image_to_bytesio(out_img)
 
                 await self.sender.sendPhoto(bytes_output)
             else:
-                raise NotImplementedError("That mode is not implemented: {}".format(self.mode))
+                raise NotImplementedError(
+                    "That mode is not implemented: {}".format(self.mode))
         except NotImplementedError:
             await self.sender.sendMessage(
                 "Mode not supported with this expression.")
@@ -172,15 +162,6 @@ class DiceBeard(BeardChatHandler):
     @getargsorask([('input_args', 'How many coins do you want to flip?')])
     async def flip_coin(self, msg, input_args):
         raise NotImplementedError
-
-        # out_coin = self.my_coin.flip_coin(input_args)
-
-        # # Check which mode the user is in and output the correct format. Try
-        # # and send picture, if fails then try and send as text
-        # try:
-        #     await self.sender.sendPhoto(out_coin.open('rb'))
-        # except AttributeError:
-        #     await self.sender.sendMessage(out_coin)
 
     @onerror()
     async def mode(self, msg):
@@ -200,9 +181,4 @@ class DiceBeard(BeardChatHandler):
             text="Mode changed to: {}".format(data),
             reply_markup=self.keyboard)
 
-        # if data == 'Picture':
-        #     self.my_dice.mode = 'pic'
-        #     self.my_coin.mode = 'pic'
-        # elif data == 'Text':
-        #     self.my_dice.mode = 'txt'
-        #     self.my_coin.mode = 'txt'
+        self.mode = data
