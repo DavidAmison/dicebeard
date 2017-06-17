@@ -20,9 +20,10 @@ class DiceBeard(BeardChatHandler):
         ('roll', 'roll', 'Rolls dice. Parses args and rolls.'),
         ('train', 'train', 'does some training'),
         ('trainmany', 'train_many', 'Trains dice roll <code>n</code> times.'),
-        ('flip', 'flip_coin', 'Flips a number of coins and returns the result'),
-        ('mode', 'mode', ('Can change the output mode of the bot'
-                          ' between picture, icons and text')),
+        # TODO reinstate coins when imlemented
+        # ('flip', 'flip_coin', 'Flips a number of coins and returns the result'),
+        ('mode', 'choose_mode', ('Can change the output mode of the bot'
+                                 ' between picture, icons and text')),
     ]
 
     __userhelp__ = ('Can roll dice or flip coins.\n\n'
@@ -164,7 +165,7 @@ class DiceBeard(BeardChatHandler):
         raise NotImplementedError
 
     @onerror()
-    async def mode(self, msg):
+    async def choose_mode(self, msg):
         await self.sender.sendMessage('Please choose:',
                                       reply_markup=self.keyboard)
 
