@@ -94,7 +94,7 @@ class DiceBeard(BeardChatHandler):
 
         if no_of_dice > 10:
             await self.sender.sendMessage(
-                "Sorry, that's too many dice! Try a number under 10 ;).")
+                "Sorry, that's too many dice! Try a number under 10.")
             return
 
         r = roll('{}d6'.format(no_of_dice))
@@ -136,8 +136,6 @@ class DiceBeard(BeardChatHandler):
             if self.mode == "text":
                 await self.sender.sendMessage(roll.to_text(*args, **kwargs))
             elif self.mode == "image":
-                # TODO fix the bug where if it's not scattered, it looks like
-                # trash
                 if "scattered" not in kwargs:
                     kwargs['scattered'] = True
                 out_img = roll.to_image(*args, **kwargs)
@@ -157,7 +155,7 @@ class DiceBeard(BeardChatHandler):
     async def roll(self, msg, roll_expr):
         self.logger.debug(roll_expr)
         r = roll(roll_expr)
-        await self._send_roll(r)
+        await self._send_roll(r, scattered=False)
 
     @onerror()
     @getargsorask([('input_args', 'How many coins do you want to flip?')])
@@ -183,3 +181,4 @@ class DiceBeard(BeardChatHandler):
             reply_markup=self.keyboard)
 
         self.mode = data
+
