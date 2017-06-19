@@ -98,7 +98,10 @@ class DiceBeard(BeardChatHandler):
             return
 
         r = roll('{}d6'.format(no_of_dice))
-        await self._send_roll(r, with_total=False)
+        if self.mode == 'image':
+            await self._send_roll(r, with_total=False, scattered=True)
+        else:
+            await self._send_roll(r, with_total=False)
 
         my_listener = await self._create_personal_listener_from_msg(msg)
 
@@ -136,8 +139,6 @@ class DiceBeard(BeardChatHandler):
             if self.mode == "text":
                 await self.sender.sendMessage(roll.to_text(*args, **kwargs))
             elif self.mode == "image":
-                if "scattered" not in kwargs:
-                    kwargs['scattered'] = True
                 out_img = roll.to_image(*args, **kwargs)
                 bytes_output = image_to_bytesio(out_img)
 
@@ -155,7 +156,7 @@ class DiceBeard(BeardChatHandler):
     async def roll(self, msg, roll_expr):
         self.logger.debug(roll_expr)
         r = roll(roll_expr)
-        await self._send_roll(r, scattered=False)
+        await self._send_roll(r)
 
     @onerror()
     @getargsorask([('input_args', 'How many coins do you want to flip?')])
