@@ -1,6 +1,4 @@
 from copy import deepcopy
-from pathlib import Path
-import os
 import io
 
 import telepot
@@ -11,10 +9,9 @@ from telepot.namedtuple import InlineKeyboardMarkup, InlineKeyboardButton
 from skybeard.beards import BeardChatHandler, ThatsNotMineException
 from skybeard.decorators import onerror, getargsorask, getargs
 
-# from . import image_dice as dice
-# from . import image_coin as coin
 from .skb_roll import roll
 from .helper import TrainResult, AnswerTimer
+from .utils import image_to_bytesio
 
 
 class DiceBeard(BeardChatHandler):
@@ -23,9 +20,10 @@ class DiceBeard(BeardChatHandler):
         ('roll', 'roll', 'Rolls dice. Parses args and rolls.'),
         ('train', 'train', 'does some training'),
         ('trainmany', 'train_many', 'Trains dice roll <code>n</code> times.'),
-        ('flip', 'flip_coin', 'Flips a number of coins and returns the result'),
-        ('mode', 'mode', ('Can change the output mode of the bot'
-                          ' between picture, icons and text')),
+        # TODO reinstate coins when imlemented
+        # ('flip', 'flip_coin', 'Flips a number of coins and returns the result'),
+        ('mode', 'choose_mode', ('Can change the output mode of the bot'
+                                 ' between picture, icons and text')),
     ]
 
     __userhelp__ = ('Can roll dice or flip coins.\n\n'
@@ -42,17 +40,13 @@ class DiceBeard(BeardChatHandler):
         self.keyboard = InlineKeyboardMarkup(
             inline_keyboard=[
                 [InlineKeyboardButton(
-                    text='Picture', callback_data=self.serialize('Picture')),
+                    text='Picture', callback_data=self.serialize('image')),
                  InlineKeyboardButton(
-                     text='Text', callback_data=self.serialize('Text'))],
+                     text='Text', callback_data=self.serialize('text'))],
             ])
 
         # Can be 'text' or 'image'
         self.mode = 'image'
-
-        # Directory where image files are stored
-        self.images_path = Path(os.path.dirname(__file__)) / 'images'
-        self.font_path = self.images_path/'FiraSans-Regular.otf'
 
     _timeout = 90
 
@@ -118,7 +112,8 @@ class DiceBeard(BeardChatHandler):
             await self.sender.sendMessage("That answer was not a number.")
             return
         except KeyError:
-            await self.sender.sendMessage("Please answer with text based numbers.")
+            await self.sender.sendMessage(
+                "Please answer with text based numbers.")
             return
 
         result = TrainResult(r, answer, timer.total_time)
@@ -144,13 +139,12 @@ class DiceBeard(BeardChatHandler):
                 if "scattered" not in kwargs:
                     kwargs['scattered'] = True
                 out_img = roll.to_image(*args, **kwargs)
-                bytes_output = io.BytesIO()
-                out_img.save(bytes_output, format='PNG')
-                bytes_output = bytes_output.getvalue()
+                bytes_output = image_to_bytesio(out_img)
 
                 await self.sender.sendPhoto(bytes_output)
             else:
-                raise NotImplementedError("That mode is not implemented: {}".format(self.mode))
+                raise NotImplementedError(
+                    "That mode is not implemented: {}".format(self.mode))
         except NotImplementedError:
             await self.sender.sendMessage(
                 "Mode not supported with this expression.")
@@ -168,17 +162,8 @@ class DiceBeard(BeardChatHandler):
     async def flip_coin(self, msg, input_args):
         raise NotImplementedError
 
-        # out_coin = self.my_coin.flip_coin(input_args)
-
-        # # Check which mode the user is in and output the correct format. Try
-        # # and send picture, if fails then try and send as text
-        # try:
-        #     await self.sender.sendPhoto(out_coin.open('rb'))
-        # except AttributeError:
-        #     await self.sender.sendMessage(out_coin)
-
     @onerror()
-    async def mode(self, msg):
+    async def choose_mode(self, msg):
         await self.sender.sendMessage('Please choose:',
                                       reply_markup=self.keyboard)
 
@@ -194,3 +179,6 @@ class DiceBeard(BeardChatHandler):
             telepot.origin_identifier(msg),
             text="Mode changed to: {}".format(data),
             reply_markup=self.keyboard)
+
+        self.mode = data
+
