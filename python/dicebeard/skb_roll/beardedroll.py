@@ -1,5 +1,6 @@
 import math
 import random
+import numpy as np
 
 import os
 from pathlib import Path
@@ -54,16 +55,19 @@ class BeardedRoll():
         rows = math.ceil(math.sqrt(dimen[1]*no_of_dice/dimen[0]))
         cols = math.ceil(math.sqrt(dimen[0]*no_of_dice/dimen[0]))
 
-        # Generates the array of points for where each dice will go (x,y,rotation)
+        # Generates the array of points for where each dice will go (x,y)
         if scattered:
-            box = (int(rows*self._die_size*2.5), int(cols*self._die_size*2.5))
-            points = self._rand_points_with_push(no_of_dice, box, 180)
-            out_img = Image.new('RGBA', box)
+            box = (0, int(rows*self._die_size*2.5),
+                   0, int(cols*self._die_size*2.5))
+            points = self._rand_points_with_push(no_of_dice, box, 170)
+            rotation = [random.randint(0, 360) for x in range(0, no_of_dice)]
+            out_img = Image.new('RGBA', (box[1], box[3]))
         else:
             points = []
             for i in range(0, rows):
                 for j in range(0, cols):
-                    points.append((j*self._die_size+5, i*self._die_size+5, 0))
+                    points.append((j*self._die_size+90, i*self._die_size+90))
+            rotation = [0] * no_of_dice
             out_img = Image.new('RGBA',
                                 (10+rows*self._die_size,
                                  10+cols*self._die_size))
@@ -71,49 +75,81 @@ class BeardedRoll():
         for i, die in enumerate(self.dice):
             die_img = die.to_image()
             die_img = die_img.convert('RGBA').rotate(
-                points[i][2], resample=Image.BICUBIC, expand=True)
-            corner = (int(points[i][0]-90),int(points[i][1]-90))
+                rotation[i], resample=Image.BICUBIC, expand=True)
+            corner = (int(points[i][0]-85), int(points[i][1]-85))
             out_img.paste(die_img, corner, die_img)
 
         return out_img.resize(dimen,  Image.ANTIALIAS)
 
-    def _rand_points_with_push(self, n, box, spread):
-        '''Generate n random points in a box seperated by a minimum distance'''
-        # Genereate the initial set of points
-        points = [[random.randint(0,box[0]-spread),
-                   random.randint(0,box[1]-spread),
-                   random.randint(0,360)] for x in range(0,n)]
-        # Calculate the 'force' each point is experiencing
-        while True:
-            forces = [None]*n
-            for i, point in enumerate(points):
-                tot_fx = 0
-                tot_fy = 0
-                for repel in [x for j, x in enumerate(points) if j != i]:
-                    # print(point,repel)
-                    sep_x = point[0] - repel[0]
-                    sep_y = point[1] - repel[1]
-                    #T o account for occasional situation where points are on top of each other
-                    sep_x += 5 if sep_x == 0 else 0
-                    sep_y += 5 if sep_y == 0 else 0
-                    dist_sq = sep_x*sep_x + sep_y*sep_y
-                    tot_fx += math.ceil(5*spread*sep_x/dist_sq) if (dist_sq-spread*spread) < 0 else 0
-                    tot_fy += math.ceil(5*spread*sep_y/dist_sq) if (dist_sq-spread*spread) < 0 else 0
-                # Check distance to walls
-                point[0] += 5 if point[0] == 0 else 0
-                point[1] += 5 if point[1] == 0 else 0
-                tot_fx += math.ceil(abs(15*spread/point[0])) if point[0] < spread/2 else 0
-                tot_fx -= math.ceil(abs(15*spread/(point[0]-box[0]))) if point[0] > (box[0]-spread/2) else 0
-                tot_fy += math.ceil(abs(15*spread/point[1])) if point[1] < spread/2 else 0
-                tot_fy -= math.ceil(abs(15*spread/(point[1]-box[1]))) if point[1] > (box[1]-spread/2) else 0
-                # Append to a list of forces
-                forces[i] = [tot_fx, tot_fy]
-            # If all forces are zero then we are good, else move the points and repeat
-            if sum([f[0]+f[1] for f in forces]) == 0:
-                print(points)
-                return points
-            else:
-                # Move the points the distance denoted by forces
-                for i in range(0,n):
-                    points[i][0] += forces[i][0]
-                    points[i][1] += forces[i][1]
+    def _rand_points_with_push(self, n, box, sep):
+        '''
+        Generate a set of n random points within a box.
+
+        Box should be a tuple containing the minimum and maximum co-ordinates
+        desired in the form (xmin, xmax, ymin, ymax)
+        '''
+
+        # Generate the initial set of points
+        x_coord = np.random.randint(box[0], box[1], (1, n)).astype(float)
+        y_coord = np.random.randint(box[2], box[3], (1, n)).astype(float)
+
+        return self._push_points(x_coord, y_coord, box, sep)
+
+    def _push_points(self, x_coord, y_coord, box, sep):
+        n = len(x_coord[0])
+        force_const = sep * 2
+        found_solution = False
+        for foo in range(1, 1000):
+            found_solution = True
+            vel_x = np.zeros((n, n))
+            vel_y = np.zeros((n, n))
+            vel_walls = np.zeros((n, 4))
+
+            one_array = np.ones((n, 1))
+            X = (one_array * x_coord)
+            Y = (one_array * y_coord)
+            dX = X.T - X
+            dY = Y.T - Y
+            # Find the force between the points
+            force_x = np.zeros((n, n))
+            force_y = np.zeros((n, n))
+            for i in range(0, n):
+                for j in range(0, n):
+                    D = math.sqrt(dX[i][j]*dX[i][j] + dY[i][j]*dY[i][j])
+                    if D < sep and i != j:
+                        found_solution = False
+                    if i != j and D != 0:
+                        force_x[i][j] = force_const*dX[i][j]/(D*D*D)
+                        force_y[i][j] = force_const*dY[i][j]/(D*D*D)
+                    elif i != j and D == 0:
+                        force_x[i][j] = force_const
+
+            # Find the new velocity (based on push from all other points)
+            vel_x = vel_x + force_x
+            vel_y = vel_y + force_y
+            # Adjust the velocity based on push from the walls
+            for i, vel_all in enumerate(vel_walls):
+                for j, vel in enumerate(vel_all):
+                    coord = x_coord[0][i] if j < 2 else y_coord[0][i]
+                    D = coord - box[j]
+                    if abs(D) < sep:
+                        found_solution = False
+                    vel_walls[i][j] += force_const*abs(D)/(D*D*D)
+
+            # Check if the current points are a solution
+            if found_solution:
+                return np.append(x_coord, y_coord, axis=0).astype(int).T.tolist()
+
+            # Move the points based on their current velocity
+            for i in range(0, n):
+                t = (box[1]+box[3]-box[0]-box[2])/15
+                x_coord[0][i] += (sum(vel_x[i])+sum(vel_walls[i][:2]))*t
+                y_coord[0][i] += (sum(vel_y[i])+sum(vel_walls[i][2:]))*t
+
+                # If the dice is out of bounds centre it on that axis
+                if x_coord[0][i] < box[0] or x_coord[0][i] > box[1]:
+                    x_coord[0][i] = (box[0]+box[1])/2
+                if y_coord[0][i] < box[2] or y_coord[0][i] > box[3]:
+                    y_coord[0][i] = (box[2]+box[3])/2
+
+        return np.append(x_coord, y_coord, axis=0).astype(int).T.tolist()
