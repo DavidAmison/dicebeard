@@ -89,7 +89,7 @@ class DiceBeard(BeardChatHandler):
         try:
             no_of_dice = int(no_of_dice)
         except ValueError:
-            await self.sender.sendMessage("Sorry, '{}' is not an number.")
+            await self.sender.sendMessage("Sorry, '{}' is not an number.".format(no_of_dice))
             return
 
         if no_of_dice > 10:
