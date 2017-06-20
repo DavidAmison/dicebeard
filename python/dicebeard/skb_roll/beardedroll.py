@@ -61,7 +61,9 @@ class BeardedRoll():
                    0, int(cols*self._die_size*2.5))
             points = self._rand_points_with_push(no_of_dice, box, 170)
             rotation = [random.randint(0, 360) for x in range(0, no_of_dice)]
-            out_img = Image.new('RGBA', (box[1], box[3]))
+            out_img = Image.new('RGBA',
+                                (box[1], box[3]),
+                                color=(30, 30, 30, 255))
         else:
             points = []
             for i in range(0, rows):
@@ -70,7 +72,8 @@ class BeardedRoll():
             rotation = [0] * no_of_dice
             out_img = Image.new('RGBA',
                                 (10+rows*self._die_size,
-                                 10+cols*self._die_size))
+                                 10+cols*self._die_size),
+                                 color=(30, 30, 30, 255))
 
         for i, die in enumerate(self.dice):
             die_img = die.to_image()

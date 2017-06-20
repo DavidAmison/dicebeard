@@ -121,7 +121,6 @@ class DiceBeard(BeardChatHandler):
         result = TrainResult(r, answer, timer.total_time)
         # Add the result to the database
         u_id = msg['from']['id']
-        print('You are user', u_id)
         await self._add_result_to_table(result, u_id)
 
         # Report back to the user about their answer
@@ -144,6 +143,8 @@ class DiceBeard(BeardChatHandler):
             elif self.mode == "image":
                 if "scattered" not in kwargs:
                     kwargs['scattered'] = True
+                if "dimen" not in kwargs:
+                    kwargs['dimen'] = (400, 400)
                 out_img = roll.to_image(*args, **kwargs)
                 bytes_output = image_to_bytesio(out_img)
 
