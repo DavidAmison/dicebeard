@@ -226,8 +226,8 @@ class DiceBeard(BeardChatHandler):
         u_id = msg['from']['id']
         with self.train_table as table:
             matches = table.find(uid=u_id)
-        items = [match for match in matches if match['dice']  == '6,6,6']
-        totals = [[0,0] for i in range(1,19)]
+        items = [match for match in matches if match['dice'] == '6,6,6']
+        totals = [[0, 0] for i in range(1, 19)]
 
         for item in items:
             n = item['total']-1
@@ -241,7 +241,7 @@ class DiceBeard(BeardChatHandler):
         buf.seek(0)
         await self.sender.sendPhoto(buf)
 
-        #Comparison of different usuers
+        # Comparison of different usuers
         with self.train_table as table:
             matches = table.find(dice='6,6,6')
         items = [match for match in matches]
