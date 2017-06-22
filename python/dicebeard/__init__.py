@@ -6,12 +6,14 @@ import telepot.aio
 from telepot import glance
 from telepot.namedtuple import InlineKeyboardMarkup, InlineKeyboardButton
 
-from skybeard.beards import BeardChatHandler, ThatsNotMineException
+from skybeard.beards import BeardChatHandler, ThatsNotMineException, BeardDBTable
 from skybeard.decorators import onerror, getargsorask, getargs
 
 from .skb_roll import roll
 from .helper import TrainResult, AnswerTimer
 from .utils import image_to_bytesio
+
+import matplotlib.pyplot as plot
 
 
 class DiceBeard(BeardChatHandler):
@@ -25,6 +27,8 @@ class DiceBeard(BeardChatHandler):
         # ('flip', 'flip_coin', 'Flips a number of coins and returns the result'),
         ('mode', 'choose_mode', ('Can change the output mode of the bot'
                                  ' between picture, icons and text')),
+        ('history', 'show_results', 'prints contents of the database'),
+        ('stats', 'show_stats', 'shows the users statistics'),
     ]
 
     __userhelp__ = ('Can roll dice or flip coins.\n\n'
@@ -45,7 +49,8 @@ class DiceBeard(BeardChatHandler):
                  InlineKeyboardButton(
                      text='Text', callback_data=self.serialize('text'))],
             ])
-
+        # Table for storign results of training
+        self.train_table = BeardDBTable(self, 'train')
         # Can be 'text' or 'image'
         self.mode = 'image'
 
@@ -121,6 +126,9 @@ class DiceBeard(BeardChatHandler):
             return
 
         result = TrainResult(r, answer, timer.total_time)
+        # Add the result to the database
+        u_id = msg['from']['id']
+        await self._add_result_to_table(result, u_id)
 
         # Report back to the user about their answer
         if result.correct:
@@ -204,3 +212,68 @@ class DiceBeard(BeardChatHandler):
 
         self.mode = data
 
+    async def _add_result_to_table(self, result, u_id):
+        '''Adds the result to the database'''
+        dice = ','.join([str(die.faces.stop-1) for die in result.roll.dice])
+        roll = ','.join([str(die.result) for die in result.roll.dice])
+        time = result.time
+        total = result.roll.total
+        guess = result.guess
+        correct = result.correct
+        with self.train_table as table:
+            table.insert(dict(
+                    uid=u_id,
+                    dice=dice,
+                    roll=roll,
+                    total=total,
+                    guess=guess,
+                    correct=correct,
+                    time=time))
+
+    async def show_results(self, msg):
+        '''Print items in the database'''
+        u_id = msg['from']['id']
+        with self.train_table as table:
+            matches = table.find(uid=u_id)
+        items = [match for match in matches]
+
+        await self.sender.sendMessage(
+                '\n'.join(['[{}], {}, {}'.format(item['roll'], item['guess'], item['time']) for item in items[:10]]))
+
+    async def show_stats(self, msg):
+        '''Show all the statistics'''
+        # Graph of roll total vs time
+        u_id = msg['from']['id']
+        with self.train_table as table:
+            matches = table.find(uid=u_id)
+        items = [match for match in matches if match['dice'] == '6,6,6']
+        totals = [[0, 0] for i in range(1, 19)]
+
+        for item in items:
+            n = item['total']-1
+            totals[n][0] += 1
+            totals[n][1] += item['time']
+        x = [i for i in range(1, 19)]
+        y = [(x[1]/x[0] if x[0] != 0 else 0) for x in totals]
+        plot.bar(x, y)
+        buf = io.BytesIO()
+        plot.savefig(buf, format='png')
+        buf.seek(0)
+        await self.sender.sendPhoto(buf)
+
+        # Comparison of different usuers
+        with self.train_table as table:
+            matches = table.find(dice='6,6,6')
+        items = [match for match in matches]
+        users = {}
+        for item in items:
+            u_id = item['uid']
+            if u_id not in users:
+                users[u_id] = [0, 0]
+            users[u_id][0] += 1
+            users[u_id][1] += item['time']
+
+        totals = [users[u_id][1]/users[u_id][0] for u_id in users]
+        for u_id in users:
+            rtn = 'User: {}, Average time: {:.3}s'.format(u_id, users[u_id][1]/users[u_id][0])
+            await self.sender.sendMessage(rtn)
