@@ -12,7 +12,7 @@ def random_shape_placement(n, box, shape):
     Box and shape should both be of type shapely.geometry.Polygon
     '''
     # Generate the initial shapes
-    shape = affinity.scale(shape, 1.1, 1.1)
+    shape = affinity.scale(shape, 1.05, 1.05)
     shapes = []
     centres = []
     for i in range(n):
@@ -54,13 +54,23 @@ def _push_to_nearest(shapes, frame):
 def _move_shape(shape, shapes, frame):
     '''Moves shape_1 until it doesn't intersect any of the shapes in shapes'''
     theta = 0
+    const = math.sqrt(shape.area)/10
     shape_1 = shape
     # Move the shape then check for overlap
     while _does_shape_intersect(shape_1, shapes, frame):
-        theta += 0.5
-        dx = theta*math.cos(theta)
-        dy = theta*math.sin(theta)
+        theta += 0.1
+        dx = const*theta*math.cos(theta)
+        dy = const*theta*math.sin(theta)
         shape_1 = affinity.translate(shape, dx, dy)
+        # Check dx and dy are not too large and replace shape
+        if dx > frame.bounds[2] and dy > frame.bounds[3]:
+            # print('Changing shape start co-ordinates')
+            # Print the current shapes co-ordinates
+            centre = shape.centroid.coords[0]
+            dx = random.randint(0, frame.bounds[2]) - centre[0]
+            dy = random.randint(0, frame.bounds[3]) - centre[1]
+            shape_1 = affinity.translate(shape, dx, dy)
+            theta = 0
 
     return shape_1
 
@@ -152,4 +162,3 @@ def _push_points(x_coord, y_coord, box, sep):
                 y_coord[0][i] = (box[2]+box[3])/2
 
     return np.append(x_coord, y_coord, axis=0).astype(int).T.tolist()
-
