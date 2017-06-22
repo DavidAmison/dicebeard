@@ -13,7 +13,7 @@ from .skb_roll import roll
 from .helper import TrainResult, AnswerTimer
 from .utils import image_to_bytesio
 
-import matplotlib.pyplot as plot
+import matplotlib.pyplot as plt
 
 
 class DiceBeard(BeardChatHandler):
@@ -246,18 +246,20 @@ class DiceBeard(BeardChatHandler):
         u_id = msg['from']['id']
         with self.train_table as table:
             matches = table.find(uid=u_id)
+        # Extracting only rolls of 3d6
         items = [match for match in matches if match['dice'] == '6,6,6']
-        totals = [[0, 0] for i in range(1, 19)]
 
+        # Adding up all the time it took for the user to cound various values
+        totals = [[0, 0] for i in range(1, 19)]
         for item in items:
             n = item['total']-1
             totals[n][0] += 1
             totals[n][1] += item['time']
         x = [i for i in range(1, 19)]
         y = [(x[1]/x[0] if x[0] != 0 else 0) for x in totals]
-        plot.bar(x, y)
+        plt.bar(x, y)
         buf = io.BytesIO()
-        plot.savefig(buf, format='png')
+        plt.savefig(buf, format='png')
         buf.seek(0)
         await self.sender.sendPhoto(buf)
 
