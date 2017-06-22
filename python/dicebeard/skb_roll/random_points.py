@@ -15,7 +15,7 @@ def random_shape_placement(n, box, shape):
     shape = affinity.scale(shape, 1.1, 1.1)
     shapes = []
     centres = []
-    for i in range(0, n):
+    for i in range(n):
         dx = random.randint(box.bounds[0], box.bounds[2])
         dy = random.randint(box.bounds[1], box.bounds[3])
         rotate = random.randint(0, 360)
@@ -98,7 +98,7 @@ def _push_points(x_coord, y_coord, box, sep):
     n = len(x_coord[0])
     force_const = sep * 2
     found_solution = False
-    for foo in range(1, 10000000):
+    for foo in range(1, 1000):
         found_solution = True
         vel_x = np.zeros((n, n))
         vel_y = np.zeros((n, n))
@@ -112,8 +112,8 @@ def _push_points(x_coord, y_coord, box, sep):
         # Find the force between the points
         force_x = np.zeros((n, n))
         force_y = np.zeros((n, n))
-        for i in range(0, n):
-            for j in range(0, n):
+        for i in range(n):
+            for j in range(n):
                 D = math.sqrt(dX[i][j]*dX[i][j] + dY[i][j]*dY[i][j])
                 if D < sep and i != j:
                     found_solution = False
@@ -140,7 +140,7 @@ def _push_points(x_coord, y_coord, box, sep):
             return np.append(x_coord, y_coord, axis=0).astype(int).T.tolist()
 
         # Move the points based on their current velocity
-        for i in range(0, n):
+        for i in range(n):
             t = (box[1]+box[3]-box[0]-box[2])/15
             x_coord[0][i] += (sum(vel_x[i])+sum(vel_walls[i][:2]))*t
             y_coord[0][i] += (sum(vel_y[i])+sum(vel_walls[i][2:]))*t
