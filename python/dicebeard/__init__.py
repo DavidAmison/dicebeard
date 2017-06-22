@@ -20,6 +20,7 @@ class DiceBeard(BeardChatHandler):
 
     __commands__ = [
         ('roll', 'roll', 'Rolls dice. Parses args and rolls.'),
+        ('rgurps', 'roll_gurps', 'Rolls 3d6, for GURPS!'),
         ('train', 'train', 'does some training'),
         ('trainmany', 'train_many', 'Trains dice roll <code>n</code> times.'),
         # TODO reinstate coins when imlemented
@@ -94,7 +95,7 @@ class DiceBeard(BeardChatHandler):
         try:
             no_of_dice = int(no_of_dice)
         except ValueError:
-            await self.sender.sendMessage("Sorry, '{}' is not an number.")
+            await self.sender.sendMessage("Sorry, '{}' is not an number.".format(no_of_dice))
             return
 
         if no_of_dice > 10:
@@ -103,7 +104,10 @@ class DiceBeard(BeardChatHandler):
             return
 
         r = roll('{}d6'.format(no_of_dice))
-        await self._send_roll(r, with_total=False)
+        if self.mode == 'image':
+            await self._send_roll(r, with_total=False, scattered=True)
+        else:
+            await self._send_roll(r, with_total=False)
 
         my_listener = await self._create_personal_listener_from_msg(msg)
 
@@ -144,10 +148,6 @@ class DiceBeard(BeardChatHandler):
             if self.mode == "text":
                 await self.sender.sendMessage(roll.to_text(*args, **kwargs))
             elif self.mode == "image":
-                if "scattered" not in kwargs:
-                    kwargs['scattered'] = True
-                if "dimen" not in kwargs:
-                    kwargs['dimen'] = (400, 400)
                 out_img = roll.to_image(*args, **kwargs)
                 bytes_output = image_to_bytesio(out_img)
 
@@ -165,7 +165,27 @@ class DiceBeard(BeardChatHandler):
     async def roll(self, msg, roll_expr):
         self.logger.debug(roll_expr)
         r = roll(roll_expr)
-        await self._send_roll(r, scattered=False)
+        await self._send_roll(r)
+
+    @onerror()
+    @getargs()
+    async def roll_gurps(self, msg, roll_against=None):
+        r = roll('3d6')
+        await self._send_roll(r, scattered=True)
+        if roll_against is not None:
+            roll_against = int(roll_against)
+            # if crit
+            if roll_against < 15 and r.total <= 4 or\
+               roll_against == 15 and r.total <= 5 or\
+               roll_against >= 16 and r.total <= 6:
+                await self.sender.sendMessage("✅✅ Critical success!")
+            elif r.total <= roll_against:
+                await self.sender.sendMessage("✅ Success!")
+            # TODO proper crit fails
+            elif r.total >= 17:
+                await self.sender.sendMessage("❌❌ Critical fail!")
+            else:
+                await self.sender.sendMessage("❌ Fail!")
 
     @onerror()
     @getargsorask([('input_args', 'How many coins do you want to flip?')])
