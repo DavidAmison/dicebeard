@@ -18,6 +18,7 @@ class DiceBeard(BeardChatHandler):
 
     __commands__ = [
         ('roll', 'roll', 'Rolls dice. Parses args and rolls.'),
+        ('rgurps', 'roll_gurps', 'Rolls 3d6, for GURPS!'),
         ('train', 'train', 'does some training'),
         ('trainmany', 'train_many', 'Trains dice roll <code>n</code> times.'),
         # TODO reinstate coins when imlemented
@@ -157,6 +158,26 @@ class DiceBeard(BeardChatHandler):
         self.logger.debug(roll_expr)
         r = roll(roll_expr)
         await self._send_roll(r)
+
+    @onerror()
+    @getargs()
+    async def roll_gurps(self, msg, roll_against=None):
+        r = roll('3d6')
+        await self._send_roll(r, scattered=True)
+        if roll_against is not None:
+            roll_against = int(roll_against)
+            # if crit
+            if roll_against < 15 and r.total <= 4 or\
+               roll_against == 15 and r.total <= 5 or\
+               roll_against >= 16 and r.total <= 6:
+                await self.sender.sendMessage("✅✅ Critical success!")
+            elif r.total <= roll_against:
+                await self.sender.sendMessage("✅ Success!")
+            # TODO proper crit fails
+            elif r.total >= 17:
+                await self.sender.sendMessage("❌❌ Critical fail!")
+            else:
+                await self.sender.sendMessage("❌ Fail!")
 
     @onerror()
     @getargsorask([('input_args', 'How many coins do you want to flip?')])
