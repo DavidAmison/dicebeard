@@ -4,7 +4,7 @@ import io
 import telepot
 import telepot.aio
 from telepot import glance
-from telepot.namedtuple import InlineKeyboardMarkup, InlineKeyboardButton
+from telepot.namedtuple import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove
 
 from skybeard.beards import BeardChatHandler, ThatsNotMineException, BeardDBTable
 from skybeard.decorators import onerror, getargsorask, getargs
@@ -106,6 +106,13 @@ class DiceBeard(BeardChatHandler):
         r = roll('{}d6'.format(no_of_dice))
         if self.mode == 'image':
             await self._send_roll(r, with_total=False, scattered=True)
+            await self.sender.sendMessage(
+                "What's the total?",
+                reply_markup=ReplyKeyboardMarkup(keyboard=(
+                    ('3', '4', '5', '6', '7', '8'),
+                    ('8', '9', '10', '11', '12'),
+                    ('13', '14', '15', '16', '17', '18'),
+                ), one_time_keyboard=True))
         else:
             await self._send_roll(r, with_total=False)
 
@@ -132,12 +139,13 @@ class DiceBeard(BeardChatHandler):
 
         # Report back to the user about their answer
         if result.correct:
-            await self.sender.sendMessage(
-                'Correct: {:.3}s'.format(timer.total_time))
-
+            report_back_str = 'Correct: {:.3}s'.format(timer.total_time)
         else:
-            await self.sender.sendMessage(
-                'Wrong: {:.3}s'.format(timer.total_time))
+            report_back_str = 'Wrong: {:.3}s'.format(timer.total_time)
+
+        await self.sender.sendMessage(
+            report_back_str,
+            reply_markup=ReplyKeyboardRemove(remove_keyboard=True))
 
         return result
 
