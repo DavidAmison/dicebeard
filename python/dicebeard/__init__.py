@@ -15,6 +15,28 @@ from .utils import image_to_bytesio
 
 import matplotlib.pyplot as plt
 
+from multiprocessing import Process, Queue
+import queue
+
+import asyncio
+
+
+async def run_in_async_process(func, *args):
+    # Doesn't run coroutines (yet!)
+    def f(q):
+        q.put(func(*args))
+
+    q = Queue()
+    proc = Process(target=f, args=(q,))
+    proc.start()
+    while True:
+        try:
+            return q.get(block=False)
+        except queue.Empty:
+            pass
+
+        await asyncio.sleep(0.01)
+
 
 class DiceBeard(BeardChatHandler):
 
@@ -29,6 +51,7 @@ class DiceBeard(BeardChatHandler):
                                  ' between picture, icons and text')),
         ('history', 'show_results', 'prints contents of the database'),
         ('stats', 'show_stats', 'shows the users statistics'),
+        ('wait', 'wait', 'Waits for 3 seconds without blocking.'),
     ]
 
     __userhelp__ = ('Can roll dice or flip coins.\n\n'
@@ -55,6 +78,12 @@ class DiceBeard(BeardChatHandler):
         self.mode = 'image'
 
     _timeout = 90
+
+    async def wait(self, msg):
+        await self.sender.sendMessage("Waiting...")
+        import time
+        await run_in_async_process(lambda: time.sleep(3))
+        await self.sender.sendMessage("Done waiting!")
 
     @onerror()
     @getargs()
