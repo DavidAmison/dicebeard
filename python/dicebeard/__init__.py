@@ -21,21 +21,32 @@ import queue
 import asyncio
 
 
-async def run_in_async_process(func, *args):
+async def run_in_async_process(func, *args, **kwargs):
+    """Run ordinary function truly async with processes.
+
+    This function turns blocking ordinary functions (as opposed to coroutine
+    functions) into awaitables that do not block the main thread.
+
+    NOTE: this function checks every 0.01 seconds for a result so it will not
+    return faster than 0.01
+    """
     # Doesn't run coroutines (yet!)
     def f(q):
-        q.put(func(*args))
+        q.put(func(*args, **kwargs))
 
     q = Queue()
     proc = Process(target=f, args=(q,))
     proc.start()
     while True:
+        # Sleep first. If the execution of `func` is faster than 0.01 seconds
+        # then it doesn't need to be used with `run_in_async_process`!
+        await asyncio.sleep(0.01)
+
         try:
             return q.get(block=False)
         except queue.Empty:
             pass
 
-        await asyncio.sleep(0.01)
 
 
 class DiceBeard(BeardChatHandler):
@@ -185,7 +196,8 @@ class DiceBeard(BeardChatHandler):
             if self.mode == "text":
                 await self.sender.sendMessage(roll.to_text(*args, **kwargs))
             elif self.mode == "image":
-                out_img = roll.to_image(*args, **kwargs)
+                out_img = await run_in_async_process(roll.to_image, *args, **kwargs)
+                # out_img = roll.to_image(*args, **kwargs)
                 bytes_output = image_to_bytesio(out_img)
 
                 await self.sender.sendPhoto(bytes_output)
