@@ -9,14 +9,13 @@ from telepot.namedtuple import InlineKeyboardMarkup, InlineKeyboardButton, Reply
 from skybeard.beards import BeardChatHandler, ThatsNotMineException, BeardDBTable
 from skybeard.decorators import onerror, getargsorask, getargs
 
-from .skb_roll import roll
+from .skb_roll import roll, beardeddie
 from .helper import TrainResult, AnswerTimer
 from .utils import image_to_bytesio
 
 import matplotlib.pyplot as plt
 
-from multiprocessing import Process, Queue
-import queue
+from multiprocessing import Pool
 
 import asyncio
 
@@ -30,23 +29,13 @@ async def run_in_async_process(func, *args, **kwargs):
     NOTE: this function checks every 0.01 seconds for a result so it will not
     return faster than 0.01
     """
-    # Doesn't run coroutines (yet!)
-    def f(q):
-        q.put(func(*args, **kwargs))
-
-    q = Queue()
-    proc = Process(target=f, args=(q,))
-    proc.start()
-    while True:
-        # Sleep first. If the execution of `func` is faster than 0.01 seconds
-        # then it doesn't need to be used with `run_in_async_process`!
-        await asyncio.sleep(0.01)
-
-        try:
-            return q.get(block=False)
-        except queue.Empty:
-            pass
-
+    with Pool(processes=1) as pool:
+        result = pool.apply_async(func, args, kwargs)
+        while True:
+            if result.ready():
+                return result.get()
+            else:
+                await asyncio.sleep(0.01)
 
 
 class DiceBeard(BeardChatHandler):
@@ -204,9 +193,9 @@ class DiceBeard(BeardChatHandler):
             else:
                 raise NotImplementedError(
                     "That mode is not implemented: {}".format(self.mode))
-        except NotImplementedError:
+        except (NotImplementedError, beardeddie.ImageNotSupported):
             await self.sender.sendMessage(
-                "Mode not supported with this expression.")
+                "Mode not supported with this expression. Here's a text version: ")
             await self.sender.sendMessage(roll.to_text())
 
     @onerror()

@@ -19,7 +19,10 @@ class BeardedRoll():
         self._die_size = 125
 
     def __getattr__(self, attr):
-        return getattr(self.roll, attr)
+        try:
+            return getattr(self.__dict__['roll'], attr)
+        except KeyError as e:
+            raise AttributeError
 
     @property
     def dice(self):
