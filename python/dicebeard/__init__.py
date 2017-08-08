@@ -111,8 +111,8 @@ class DiceBeard(BeardChatHandler):
         assert isinstance(value, bool), "Toggle must be boolean."
         with self.settings_table as table:
             entry = table.find_one(name='auto_gurps_roll_enabled')
-            entry['value'] = value
             if entry is not None:
+                entry['value'] = value
                 table.update(entry, ['id'])
             else:
                 table.insert(dict(name='auto_gurps_roll_enabled', value=value))
