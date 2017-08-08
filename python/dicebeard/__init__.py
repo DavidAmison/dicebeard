@@ -1,13 +1,16 @@
 from copy import deepcopy
 import io
+from functools import partial
 
 import telepot
 import telepot.aio
 from telepot import glance
 from telepot.namedtuple import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove
 
-from skybeard.beards import BeardChatHandler, ThatsNotMineException, BeardDBTable
+from skybeard.beards import BeardChatHandler, ThatsNotMineException
+from skybeard.bearddbtable import BeardDBTable, BeardInstanceDBTable
 from skybeard.decorators import onerror, getargsorask, getargs
+from skybeard.predicates import regex_predicate
 
 from .skb_roll import roll, beardeddie
 from .helper import TrainResult, AnswerTimer
@@ -52,6 +55,7 @@ class DiceBeard(BeardChatHandler):
         ('history', 'show_results', 'prints contents of the database'),
         ('stats', 'show_stats', 'shows the users statistics'),
         ('wait', 'wait', 'Waits for 3 seconds without blocking.'),
+        ('toggleautogurps', 'toggle_auto_gurps', 'Toggles automatic GURPS rolling.'),
     ]
 
     __userhelp__ = ('Can roll dice or flip coins.\n\n'
@@ -74,10 +78,71 @@ class DiceBeard(BeardChatHandler):
             ])
         # Table for storign results of training
         self.train_table = BeardDBTable(self, 'train')
+        self.settings_table = BeardInstanceDBTable(self, 'settings')
+        if self.auto_gurps_roll_enabled:
+            self.register_command(regex_predicate(r'^\d\d?$'), self.roll_gurps)
+
         # Can be 'text' or 'image'
         self.mode = 'image'
 
+    @property
+    def auto_gurps_roll_enabled(self):
+        with self.settings_table as table:
+            entries = [i for i in table.find(name='auto_gurps_roll_enabled')]
+            if len(entries) > 1: 
+                # If there's more than one entry, there's been a problem. Drop
+                # the table and remake.
+                self.logger.info("Yeah.... we got {entries}".format(**locals()))
+                table.drop()
+                entries = []
+
+        # If there's no entry, make one.
+        if len([i for i in entries]) == 0:
+            self.auto_gurps_roll_enabled = False
+
+        with self.settings_table as table:
+            entry = table.find_one(name='auto_gurps_roll_enabled')
+
+        return entry['value']
+        # return None
+
+    @auto_gurps_roll_enabled.setter
+    def auto_gurps_roll_enabled(self, value):
+        assert isinstance(value, bool), "Toggle must be boolean."
+        with self.settings_table as table:
+            entry = table.find_one(name='auto_gurps_roll_enabled')
+            entry['value'] = value
+            if entry is not None:
+                table.update(entry, ['id'])
+            else:
+                table.insert(dict(name='auto_gurps_roll_enabled', value=value))
+
+            # Let's check the database
+            entries = [i for i in table.find(name='auto_gurps_roll_enabled')]
+            assert len(entries) == 1
+            assert table.find_one(name='auto_gurps_roll_enabled')['value'] == value
+
+        return value
+
     _timeout = 90
+
+    async def toggle_auto_gurps(self, msg):
+        # This uses the database a lot. This might be a problem in the future.
+        # If it is, cache it locally.
+        if not self.auto_gurps_roll_enabled:
+            self.register_command(regex_predicate(r'^\d\d?$'), self.auto_roll_gurps)
+            self.auto_gurps_roll_enabled = True
+            await self.sender.sendMessage("Auto GURPS rolling enabled!")
+        else:
+            for command in self._instance_commands:
+                # If command is regex predicate
+                if command.toJSON()['predicate'].startswith('re.compile'):
+                    self._instance_commands.remove(command)
+                    self.auto_gurps_roll_enabled = False
+                    await self.sender.sendMessage("Auto GURPS rolling disabled.")
+                    break
+            else:
+                assert False, "Shouldn't get here."
 
     async def wait(self, msg):
         await self.sender.sendMessage("Waiting...")
@@ -208,6 +273,14 @@ class DiceBeard(BeardChatHandler):
     @onerror()
     @getargs()
     async def roll_gurps(self, msg, roll_against=None):
+        return await self._roll_gurps(msg, roll_against)
+
+    @onerror()
+    async def auto_roll_gurps(self, msg):
+        roll_against = msg['text']
+        return await self._roll_gurps(msg, roll_against)
+
+    async def _roll_gurps(self, msg, roll_against=None):
         r = roll('3d6')
         await self._send_roll(r, scattered=True)
         if roll_against is not None:
