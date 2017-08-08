@@ -217,11 +217,12 @@ class DiceBeard(BeardChatHandler):
                roll_against == 15 and r.total <= 5 or\
                roll_against >= 16 and r.total <= 6:
                 await self.sender.sendMessage("✅✅ Critical success!")
+            elif (roll_against >= 16 and r.total == 18 or
+                  roll_against <= 15 and r.total >= 17 or
+                  r.total > roll_against+10):
+                await self.sender.sendMessage("❌❌ Critical fail!")
             elif r.total <= roll_against:
                 await self.sender.sendMessage("✅ Success!")
-            # TODO proper crit fails
-            elif r.total >= 17:
-                await self.sender.sendMessage("❌❌ Critical fail!")
             else:
                 await self.sender.sendMessage("❌ Fail!")
 
