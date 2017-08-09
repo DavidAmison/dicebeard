@@ -4,7 +4,12 @@ import io
 import telepot
 import telepot.aio
 from telepot import glance
-from telepot.namedtuple import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove
+from telepot.namedtuple import (
+    InlineKeyboardMarkup,
+    InlineKeyboardButton,
+    ReplyKeyboardMarkup,
+    ReplyKeyboardRemove
+)
 
 from skybeard.beards import BeardChatHandler, ThatsNotMineException
 from skybeard.bearddbtable import BeardDBTable, BeardInstanceDBTable
@@ -31,9 +36,6 @@ async def run_in_async_process(func, *args, **kwargs):
 
     This function turns blocking ordinary functions (as opposed to coroutine
     functions) into awaitables that do not block the main thread.
-
-    NOTE: this function checks every 0.01 seconds for a result so it will not
-    return faster than 0.01
     """
     with Pool(processes=1) as pool:
         result = pool.apply_async(func, args, kwargs)
@@ -70,6 +72,8 @@ class DiceBeard(BeardChatHandler):
                     'coins you would like to flip (e.g /flip 10 will filp 10 '
                     'coins)').strip()
 
+    _timeout = 90
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.keyboard = InlineKeyboardMarkup(
@@ -81,6 +85,7 @@ class DiceBeard(BeardChatHandler):
             ])
         # Table for storing results of training
         self.train_table = BeardDBTable(self, 'train')
+
         self.settings_table = BeardInstanceDBTable(self, 'settings')
         if self.auto_gurps_roll_enabled:
             self.register_auto_gurps_command()
@@ -89,7 +94,10 @@ class DiceBeard(BeardChatHandler):
         self.mode = 'image'
 
     def register_auto_gurps_command(self):
-        self.register_command(regex_predicate(r'^-?\d+$'), self.auto_roll_gurps)
+        self.register_command(
+            regex_predicate(r'^-?\d+$'),
+            self.auto_roll_gurps
+        )
 
     @property
     def auto_gurps_roll_enabled(self):
@@ -130,8 +138,6 @@ class DiceBeard(BeardChatHandler):
 
         return value
 
-    _timeout = 90
-
     async def toggle_auto_gurps(self, msg):
         # This uses the database a lot. This might be a problem in the future.
         # If it is, cache it locally.
@@ -149,12 +155,6 @@ class DiceBeard(BeardChatHandler):
                     break
             else:
                 assert False, "Shouldn't get here."
-
-    async def wait(self, msg):
-        await self.sender.sendMessage("Waiting...")
-        import time
-        await run_in_async_process(lambda: time.sleep(3))
-        await self.sender.sendMessage("Done waiting!")
 
     @onerror()
     @getargs()
@@ -256,8 +256,8 @@ class DiceBeard(BeardChatHandler):
             if self.mode == "text":
                 await self.sender.sendMessage(roll.to_text(*args, **kwargs))
             elif self.mode == "image":
-                out_img = await run_in_async_process(roll.to_image, *args, **kwargs)
-                # out_img = roll.to_image(*args, **kwargs)
+                out_img = await run_in_async_process(
+                    roll.to_image, *args, **kwargs)
                 bytes_output = image_to_bytesio(out_img)
 
                 await self.sender.sendPhoto(bytes_output)
@@ -265,8 +265,8 @@ class DiceBeard(BeardChatHandler):
                 raise NotImplementedError(
                     "That mode is not implemented: {}".format(self.mode))
         except (NotImplementedError, beardeddie.ImageNotSupported):
-            await self.sender.sendMessage(
-                "Mode not supported with this expression. Here's a text version: ")
+            await self.sender.sendMessage("Mode not supported with this "
+                                          "expression. Here's a text version: ")
             await self.sender.sendMessage(roll.to_text())
 
     @onerror()
