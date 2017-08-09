@@ -1,6 +1,5 @@
 from copy import deepcopy
 import io
-from functools import partial
 
 import telepot
 import telepot.aio
@@ -21,6 +20,10 @@ import matplotlib.pyplot as plt
 from multiprocessing import Pool
 
 import asyncio
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 async def run_in_async_process(func, *args, **kwargs):
@@ -76,23 +79,26 @@ class DiceBeard(BeardChatHandler):
                  InlineKeyboardButton(
                      text='Text', callback_data=self.serialize('text'))],
             ])
-        # Table for storign results of training
+        # Table for storing results of training
         self.train_table = BeardDBTable(self, 'train')
         self.settings_table = BeardInstanceDBTable(self, 'settings')
         if self.auto_gurps_roll_enabled:
-            self.register_command(regex_predicate(r'^\d\d?$'), self.roll_gurps)
+            self.register_auto_gurps_command()
 
         # Can be 'text' or 'image'
         self.mode = 'image'
+
+    def register_auto_gurps_command(self):
+        self.register_command(regex_predicate(r'^-?\d+$'), self.auto_roll_gurps)
 
     @property
     def auto_gurps_roll_enabled(self):
         with self.settings_table as table:
             entries = [i for i in table.find(name='auto_gurps_roll_enabled')]
-            if len(entries) > 1: 
+            if len(entries) > 1:
                 # If there's more than one entry, there's been a problem. Drop
                 # the table and remake.
-                self.logger.info("Yeah.... we got {entries}".format(**locals()))
+                self.logger.warning("Too many entries found in settings table: {entries}".format(**locals()))
                 table.drop()
                 entries = []
 
@@ -130,7 +136,7 @@ class DiceBeard(BeardChatHandler):
         # This uses the database a lot. This might be a problem in the future.
         # If it is, cache it locally.
         if not self.auto_gurps_roll_enabled:
-            self.register_command(regex_predicate(r'^\d\d?$'), self.auto_roll_gurps)
+            self.register_auto_gurps_command()
             self.auto_gurps_roll_enabled = True
             await self.sender.sendMessage("Auto GURPS rolling enabled!")
         else:
@@ -282,10 +288,13 @@ class DiceBeard(BeardChatHandler):
 
     async def _roll_gurps(self, msg, roll_against=None):
         r = roll('3d6')
+        logger.debug("Sending dice roll...")
         await self._send_roll(r, scattered=True)
+        logger.debug("Sent dice roll.")
+        logger.debug("Sending pass/fail...")
         if roll_against is not None:
+            logger.debug("roll_against is not None!")
             roll_against = int(roll_against)
-            # if crit
             if roll_against < 15 and r.total <= 4 or\
                roll_against == 15 and r.total <= 5 or\
                roll_against >= 16 and r.total <= 6:
@@ -298,6 +307,9 @@ class DiceBeard(BeardChatHandler):
                 await self.sender.sendMessage("✅ Success!")
             else:
                 await self.sender.sendMessage("❌ Fail!")
+
+        logger.debug("Pass/fail should have been sent.")
+
 
     @onerror()
     @getargsorask([('input_args', 'How many coins do you want to flip?')])
