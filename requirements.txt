@@ -1,6 +1,4 @@
-dice<=1.1.0
 pillow>=4.0.0
-git+git://github.com/nasfarley88/pydice.git
 numpy
 matplotlib
 shapely>=1.6b2

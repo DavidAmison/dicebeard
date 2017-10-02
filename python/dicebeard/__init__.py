@@ -1,3 +1,11 @@
+try:
+    import pydice
+except ImportError:
+    print("WARNING: package missing for dicebeard.\n")
+    print("Install custom pydice with:\n\n"
+          "pip install git+git://github.com/nasfarley88/pydice.git")
+    raise SystemExit
+
 from copy import deepcopy
 import io
 
