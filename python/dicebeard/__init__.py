@@ -5,6 +5,7 @@ import telepot
 import telepot.aio
 from telepot import glance
 from telepot.namedtuple import InlineKeyboardMarkup, InlineKeyboardButton
+import asyncio
 
 from skybeard.beards import BeardChatHandler, ThatsNotMineException, BeardDBTable
 from skybeard.decorators import onerror, getargsorask, getargs
@@ -141,6 +142,7 @@ class DiceBeard(BeardChatHandler):
 
         return result
 
+
     async def _send_roll(self, roll, *args, **kwargs):
         """Sends roll through telegram using preferred method."""
 
@@ -148,9 +150,8 @@ class DiceBeard(BeardChatHandler):
             if self.mode == "text":
                 await self.sender.sendMessage(roll.to_text(*args, **kwargs))
             elif self.mode == "image":
-                out_img = roll.to_image(*args, **kwargs)
+                out_img = await roll.to_image(*args, **kwargs)
                 bytes_output = image_to_bytesio(out_img)
-
                 await self.sender.sendPhoto(bytes_output)
             else:
                 raise NotImplementedError(

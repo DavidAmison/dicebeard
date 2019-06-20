@@ -5,7 +5,7 @@ import math
 import numpy as np
 
 
-def random_shape_placement(n, box, shape):
+async def random_shape_placement(n, box, shape):
     '''
     Fit n of shape in box placed randomly. Return the centroids.
 

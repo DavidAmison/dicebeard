@@ -3,4 +3,4 @@ pillow>=4.0.0
 git+git://github.com/nasfarley88/pydice.git
 numpy
 matplotlib
-shapely>=1.6b2
+shapely

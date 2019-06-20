@@ -5,11 +5,13 @@ import os
 from pathlib import Path
 
 from PIL import Image, ImageFont, ImageDraw
+import multiprocessing
 
 from .beardeddie import BeardedDie
 
 from shapely.geometry import Polygon
 from .random_points import random_shape_placement
+
 
 class BeardedRoll():
 
@@ -37,7 +39,8 @@ class BeardedRoll():
 
         return ret_str
 
-    def to_image(self, scattered=False, dimen=(200, 200), with_total=False):
+    async def to_image(self, scattered=False, dimen=(200, 200),
+                       with_total=False):
         '''
         Returns the dicec roll as an image.
 
@@ -63,7 +66,7 @@ class BeardedRoll():
             y_max = x_max
             box = Polygon([(0, 0), (x_max, 0), (x_max, y_max), (0, y_max)])
             die_shape = Polygon([(0, 0), (125, 0), (125, 125), (0, 125)])
-            points = random_shape_placement(no_of_dice, box, die_shape)
+            points = await random_shape_placement(no_of_dice, box, die_shape)
             out_img = Image.new('RGBA',
                                 (int(box.bounds[2]), int(box.bounds[3])),
                                 color=(30, 30, 30, 255))
@@ -88,4 +91,5 @@ class BeardedRoll():
                       int(points[i][1]-height/2))
             out_img.paste(die_img, corner, die_img)
 
+        out_img = out_img.resize(dimen, Image.ANTIALIAS)
         return out_img.resize(dimen,  Image.ANTIALIAS)
